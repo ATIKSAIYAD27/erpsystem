@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Kanban - Nexus ERP</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #05070a;
+            --sidebar-bg: #0a0f19;
+            --card-bg: rgba(15, 23, 42, 0.6);
+            --card-border: rgba(255, 255, 255, 0.04);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --accent-green: #10b981;
+            --accent-orange: #f59e0b;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.03) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.03) 0%, transparent 40%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            margin: 0;
+            background-attachment: fixed;
+        }
+
+        /* Standard Sidebar */
+        .sidebar {
+            width: 280px;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--card-border);
+            padding: 35px 25px;
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+            backdrop-filter: blur(20px);
+        }
+
+        /* Input Fixes */
+        .form-control, .form-select {
+            background-color: rgba(15, 23, 42, 0.6) !important;
+            border: 1px solid var(--card-border) !important;
+            color: white !important;
+        }
+        .form-control:focus, .form-select:focus {
+            background-color: rgba(15, 23, 42, 0.8) !important;
+            box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25) !important;
+        }
+        select option {
+            background-color: #0f172a !important;
+            color: white !important;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 280px;
+            height: 100vh;
+            background: var(--sidebar-bg);
+            backdrop-filter: blur(25px);
+            border-right: 1px solid var(--card-border);
+            padding: 24px;
+            z-index: 1000;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+
+        .brand-icon {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .brand-text h3 {
+            margin: 0;
+            font-weight: 800;
+            font-size: 22px;
+            background: linear-gradient(to right, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 14px 20px;
+            border-radius: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            text-decoration: none;
+            transition: 0.3s;
+            margin-bottom: 5px;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: white;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .nav-link.active {
+            border-left: 4px solid var(--accent-blue);
+            background: linear-gradient(to right, rgba(59, 130, 246, 0.1), transparent);
+        }
+
+        /* Main Wrapper */
+        .main-wrapper {
+            margin-left: 280px;
+            padding: 40px;
+        }
+
+        .header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        .page-title {
+            font-size: 32px;
+            font-weight: 800;
+            background: linear-gradient(to right, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Kanban Layout */
+        .kanban-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 25px;
+            align-items: flex-start;
+        }
+
+        .kanban-column {
+            background: rgba(30, 41, 59, 0.4);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 20px;
+            min-height: 600px;
+            backdrop-filter: blur(10px);
+        }
+
+        .column-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .column-title {
+            font-weight: 700;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .task-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 18px;
+            padding: 18px;
+            margin-bottom: 15px;
+            cursor: grab;
+            transition: all 0.3s;
+        }
+        .task-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(59, 130, 246, 0.4);
+            background: rgba(30, 41, 59, 0.9);
+        }
+
+        .task-title {
+            font-weight: 700;
+            color: white;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .task-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+        }
+
+        .task-project {
+            font-size: 10px;
+            background: rgba(255,255,255,0.05);
+            padding: 4px 8px;
+            border-radius: 6px;
+            color: var(--text-secondary);
+        }
+
+        .avatar-sm {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 800;
+            color: white;
+        }
+
+        .btn-premium {
+            background: linear-gradient(135deg, var(--accent-blue), #2563eb);
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 14px;
+            font-weight: 700;
+            box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3);
+            transition: 0.3s;
+        }
+        .btn-premium:hover { transform: translateY(-3px); box-shadow: 0 15px 30px rgba(37, 99, 235, 0.5); color: white; }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: var(--card-bg);
+            padding: 8px 20px;
+            border-radius: 50px;
+            border: 1px solid var(--card-border);
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: white;
+            box-shadow: 0 5px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-up { animation: fadeUp 0.6s ease forwards; }
+
+        .dragging { opacity: 0.5; transform: scale(0.95); }
+        .drag-over { background: rgba(59, 130, 246, 0.1); border-color: var(--accent-blue); }
+    </style>
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <div class="brand">
+            <div class="brand-icon"><i class="bi bi-hexagon-fill"></i></div>
+            <div class="brand-text"><h3>Nexus ERP</h3></div>
+        </div>
+        <a href="/dashboard" class="nav-link"><i class="bi bi-grid-1x2-fill"></i> Overview</a>
+        <a href="/employee" class="nav-link"><i class="bi bi-people-fill"></i> Workforce</a>
+        <a href="/attendance" class="nav-link"><i class="bi bi-clock-history"></i> Attendance</a>
+        <a href="/payroll" class="nav-link"><i class="bi bi-cash-stack"></i> Payroll</a>
+        <a href="/finance" class="nav-link"><i class="bi bi-wallet2"></i> Finance Hub</a>
+        <a href="/inventory" class="nav-link"><i class="bi bi-box-seam-fill"></i> Inventory</a>
+        <a href="/sales" class="nav-link"><i class="bi bi-graph-up-arrow"></i> Sales & CRM</a>
+        <a href="/projects" class="nav-link active"><i class="bi bi-kanban"></i> Projects</a>
+        <a href="/notifications" class="nav-link">
+            <i class="bi bi-bell"></i> Alerts
+            {% if notif_count > 0 %}
+            <span class="badge rounded-pill bg-danger ms-auto" style="font-size: 10px;">{{ notif_count }}</span>
+            {% endif %}
+        </a>
+        <a href="{{ url_for('auth.logout') }}" class="nav-link mt-auto text-danger"><i class="bi bi-power"></i> Logout</a>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-wrapper">
+        <div class="header-section animate-up">
+            <div>
+                <h1 class="page-title">Project Kanban</h1>
+                <div class="text-secondary">Track tasks, agile workflows, and team performance</div>
+            </div>
+            <div class="d-flex align-items-center gap-4">
+                {% include 'header_search.html' %}
+                <div class="user-profile">
+                    <div class="avatar">{{ session.get('name', 'A')[0] | upper }}</div>
+                    <div style="padding-right: 10px;">
+                        <div style="font-size: 14px; font-weight: 700; color: white;">{{ session.get('name', 'Admin User') }}</div>
+                        <div style="font-size: 12px; color: var(--text-secondary);">{{ session.get('role_name', 'System Admin') }}</div>
+                    </div>
+                </div>
+                <button class="btn btn-premium" data-bs-toggle="modal" data-bs-target="#addTaskModal">
+                    <i class="bi bi-plus-lg me-2"></i>New Task
+                </button>
+            </div>
+        </div>
+
+        <div class="kanban-board animate-up" style="animation-delay: 0.1s;">
+            {% set columns = [
+                {'id': 'Pending', 'icon': 'bi-clock-history', 'color': 'var(--text-secondary)'},
+                {'id': 'In Progress', 'icon': 'bi-arrow-repeat', 'color': 'var(--accent-blue)'},
+                {'id': 'Blocked', 'icon': 'bi-exclamation-octagon', 'color': 'var(--accent-orange)'},
+                {'id': 'Completed', 'icon': 'bi-check-circle-fill', 'color': 'var(--accent-green)'}
+            ] %}
+
+            {% for col in columns %}
+            <div class="kanban-column" id="col-{{ col.id|replace(' ', '') }}" data-status="{{ col.id }}">
+                <div class="column-header">
+                    <div class="column-title" style="color: {{ col.color }};">
+                        <i class="bi {{ col.icon }}"></i> {{ col.id }}
+                    </div>
+                    <span class="badge rounded-pill bg-dark border border-secondary">{{ kanban[col.id]|length }}</span>
+                </div>
+                <div class="column-body">
+                    {% for task in kanban[col.id] %}
+                    <div class="task-card" draggable="true" data-id="{{ task.task_id }}">
+                        <div class="task-title">{{ task.title }}</div>
+                        <div class="task-meta">
+                            <span class="task-project">{{ task.project_name or 'Nexus General' }}</span>
+                            <div class="avatar-sm" title="{{ task.assignee or 'Unassigned' }}">
+                                {{ task.assignee[0] | upper if task.assignee else '?' }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+
+    <!-- Modal -->
+    <div class="modal fade" id="addTaskModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark border-secondary rounded-4">
+                <form action="{{ url_for('project.add_task') }}" method="POST">
+                    <div class="modal-header border-secondary">
+                        <h5 class="modal-title text-white">Assign New Directive</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <div class="mb-3">
+                            <label class="form-label text-secondary">Task Title</label>
+                            <input type="text" class="form-control bg-transparent text-white border-secondary" name="title" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-secondary">Project Link</label>
+                            <select class="form-select bg-transparent text-white border-secondary" name="project_id">
+                                <option value="">General Operations</option>
+                                {% for p in projects %}
+                                <option value="{{ p.project_id }}">{{ p.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-secondary">Assigned To</label>
+                            <select class="form-select bg-transparent text-white border-secondary" name="assigned_to">
+                                {% for u in users %}
+                                <option value="{{ u.user_id }}">{{ u.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-secondary">Deadline</label>
+                            <input type="date" class="form-control bg-transparent text-white border-secondary" name="deadline" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0">
+                        <button type="submit" class="btn btn-premium w-100">Initialize Task</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const cards = document.querySelectorAll('.task-card');
+        const columns = document.querySelectorAll('.kanban-column');
+
+        cards.forEach(card => {
+            card.addEventListener('dragstart', () => card.classList.add('dragging'));
+            card.addEventListener('dragend', () => card.classList.remove('dragging'));
+        });
+
+        columns.forEach(column => {
+            column.addEventListener('dragover', e => {
+                e.preventDefault();
+                column.classList.add('drag-over');
+            });
+
+            column.addEventListener('dragleave', () => column.classList.remove('drag-over'));
+
+            column.addEventListener('drop', e => {
+                column.classList.remove('drag-over');
+                const draggable = document.querySelector('.dragging');
+                column.querySelector('.column-body').appendChild(draggable);
+                
+                const taskId = draggable.getAttribute('data-id');
+                const newStatus = column.getAttribute('data-status');
+                
+                fetch('/tasks/update_status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ task_id: taskId, status: newStatus })
+                });
+            });
+        });
+    </script>
+    {% include 'ai_widget.html' %}
+</body>
+</html>

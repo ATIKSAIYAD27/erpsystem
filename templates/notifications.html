@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Intelligence Alerts - Nexus ERP</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #05070a;
+            --sidebar-bg: #0a0f19;
+            --card-bg: rgba(15, 23, 42, 0.6);
+            --card-border: rgba(255, 255, 255, 0.04);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --accent-green: #10b981;
+            --accent-orange: #f59e0b;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.03) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.03) 0%, transparent 40%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            margin: 0;
+            background-attachment: fixed;
+        }
+
+        /* Standard Sidebar */
+        .sidebar {
+            width: 280px;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--card-border);
+            padding: 35px 25px;
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+            backdrop-filter: blur(20px);
+        }
+
+        /* Input Fixes */
+        .form-control, .form-select {
+            background-color: rgba(15, 23, 42, 0.6) !important;
+            border: 1px solid var(--card-border) !important;
+            color: white !important;
+        }
+        .form-control:focus, .form-select:focus {
+            background-color: rgba(15, 23, 42, 0.8) !important;
+            box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25) !important;
+        }
+        select option {
+            background-color: #0f172a !important;
+            color: white !important;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 280px;
+            height: 100vh;
+            background: var(--sidebar-bg);
+            backdrop-filter: blur(25px);
+            border-right: 1px solid var(--card-border);
+            padding: 24px;
+            z-index: 1000;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+
+        .brand-icon {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .brand-text h3 {
+            margin: 0;
+            font-weight: 800;
+            font-size: 22px;
+            background: linear-gradient(to right, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 14px 20px;
+            border-radius: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            text-decoration: none;
+            transition: 0.3s;
+            margin-bottom: 5px;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: white;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .nav-link.active {
+            border-left: 4px solid var(--accent-blue);
+            background: linear-gradient(to right, rgba(59, 130, 246, 0.1), transparent);
+        }
+
+        /* Main Wrapper */
+        .main-wrapper {
+            margin-left: 280px;
+            padding: 40px;
+        }
+
+        .header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        .page-title {
+            font-size: 32px;
+            font-weight: 800;
+            background: linear-gradient(to right, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Notification Card */
+        .notif-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            backdrop-filter: blur(15px);
+            transition: 0.3s;
+            position: relative;
+        }
+        .notif-card:hover { transform: scale(1.01); background: rgba(30, 41, 59, 0.9); }
+
+        .notif-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .icon-info { background: rgba(59, 130, 246, 0.1); color: var(--accent-blue); }
+        .icon-warning { background: rgba(245, 158, 11, 0.1); color: var(--accent-orange); }
+        .icon-success { background: rgba(16, 185, 129, 0.1); color: var(--accent-green); }
+
+        .notif-dot {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 8px;
+            height: 8px;
+            background: var(--accent-blue);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--accent-blue);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: var(--card-bg);
+            padding: 8px 20px;
+            border-radius: 50px;
+            border: 1px solid var(--card-border);
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: white;
+            box-shadow: 0 5px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-up { animation: fadeUp 0.6s ease forwards; }
+    </style>
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <div class="brand">
+            <div class="brand-icon"><i class="bi bi-hexagon-fill"></i></div>
+            <div class="brand-text"><h3>Nexus ERP</h3></div>
+        </div>
+        <a href="/dashboard" class="nav-link"><i class="bi bi-grid-1x2-fill"></i> Overview</a>
+        <a href="/employee" class="nav-link"><i class="bi bi-people-fill"></i> Workforce</a>
+        <a href="/attendance" class="nav-link"><i class="bi bi-clock-history"></i> Attendance</a>
+        <a href="/payroll" class="nav-link"><i class="bi bi-cash-stack"></i> Payroll</a>
+        <a href="/finance" class="nav-link"><i class="bi bi-wallet2"></i> Finance Hub</a>
+        <a href="/inventory" class="nav-link"><i class="bi bi-box-seam-fill"></i> Inventory</a>
+        <a href="/sales" class="nav-link"><i class="bi bi-graph-up-arrow"></i> Sales & CRM</a>
+        <a href="/projects" class="nav-link"><i class="bi bi-kanban"></i> Projects</a>
+        <a href="/notifications" class="nav-link active">
+            <i class="bi bi-bell"></i> Alerts
+            {% if notif_count > 0 %}
+            <span class="badge rounded-pill bg-danger ms-auto" style="font-size: 10px;">{{ notif_count }}</span>
+            {% endif %}
+        </a>
+        <a href="{{ url_for('auth.logout') }}" class="nav-link mt-auto text-danger"><i class="bi bi-power"></i> Logout</a>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-wrapper">
+        <div class="header-section animate-up">
+            <div>
+                <h1 class="page-title">Intelligence Alerts</h1>
+                <div class="text-secondary">Real-time system telemetry and operational notifications</div>
+            </div>
+            <div class="d-flex align-items-center gap-4">
+                {% include 'header_search.html' %}
+                <div class="user-profile">
+                    <div class="avatar">{{ session.get('name', 'A')[0] | upper }}</div>
+                    <div style="padding-right: 10px;">
+                        <div style="font-size: 14px; font-weight: 700; color: white;">{{ session.get('name', 'Admin User') }}</div>
+                        <div style="font-size: 12px; color: var(--text-secondary);">{{ session.get('role_name', 'System Admin') }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="animate-up" style="animation-delay: 0.1s;">
+            {% if notifications %}
+                {% for n in notifications %}
+                <div class="notif-card">
+                    <div class="notif-icon {% if n.type == 'warning' %}icon-warning{% elif n.type == 'success' %}icon-success{% else %}icon-info{% endif %}">
+                        <i class="bi {% if n.type == 'warning' %}bi-exclamation-triangle{% elif n.type == 'success' %}bi-check-circle{% else %}bi-info-circle{% endif %}"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="text-white fw-bold">{{ n.message }}</div>
+                        <div class="text-secondary small mt-1">{{ n.created_at }}</div>
+                    </div>
+                    {% if n.is_read == 0 %}
+                    <div class="notif-dot"></div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-bell-slash text-secondary fs-1 opacity-25 d-block mb-3"></i>
+                    <p class="text-secondary">All caught up! No active alerts.</p>
+                </div>
+            {% endif %}
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    {% include 'ai_widget.html' %}
+</body>
+</html>

@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Settings - Nexus ERP</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #05070a;
+            --sidebar-bg: #0a0f19;
+            --card-bg: rgba(15, 23, 42, 0.6);
+            --card-border: rgba(255, 255, 255, 0.04);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.03) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.03) 0%, transparent 40%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            margin: 0;
+            background-attachment: fixed;
+            display: flex;
+        }
+
+        /* Standard Sidebar */
+        .sidebar {
+            width: 280px;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--card-border);
+            padding: 35px 25px;
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+            backdrop-filter: blur(20px);
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 40px;
+            overflow-y: auto;
+            transition: all 0.3s ease;
+        }
+
+        .glass-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 35px;
+            backdrop-filter: blur(10px);
+        }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 30px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            font-weight: 800;
+            box-shadow: 0 15px 30px rgba(59, 130, 246, 0.2);
+        }
+
+        .form-control {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            padding: 12px 18px;
+            border-radius: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .form-control:focus {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+            color: #ffffff;
+            outline: none;
+        }
+
+        .form-label {
+            margin-bottom: 8px;
+            font-weight: 500;
+            display: block;
+        }
+
+        .btn-save {
+            background: linear-gradient(135deg, var(--accent-blue), #2563eb);
+            border: none;
+            padding: 12px 35px;
+            border-radius: 14px;
+            font-weight: 700;
+            transition: 0.3s;
+        }
+
+        .btn-save:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 14px 20px;
+            border-radius: 16px;
+            color: #94a3b8;
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid transparent;
+            margin-bottom: 8px;
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .nav-link.active {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+            color: white;
+            border-color: rgba(59, 130, 246, 0.2);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <h4 class="fw-800 mb-5">Nexus Settings</h4>
+        <a href="/dashboard" class="nav-link mb-2"><i class="bi bi-arrow-left"></i> Back to ERP</a>
+        <a href="javascript:void(0)" onclick="showTab('profile')" id="btn-profile" class="nav-link active mb-2"><i class="bi bi-person-circle"></i> Profile Info</a>
+        <a href="javascript:void(0)" onclick="showTab('security')" id="btn-security" class="nav-link mb-2"><i class="bi bi-shield-lock"></i> Security</a>
+        <a href="javascript:void(0)" onclick="showTab('appearance')" id="btn-appearance" class="nav-link mb-2"><i class="bi bi-palette"></i> Appearance</a>
+    </nav>
+
+    <div class="main-content">
+        <div class="container-fluid">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} rounded-4 border-0 mb-4">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div id="tab-profile" class="setting-tab">
+                <div class="profile-header">
+                    <div class="profile-avatar">{{ user.name[0].upper() }}</div>
+                    <div>
+                        <h2 class="fw-800 m-0">{{ user.name }}</h2>
+                        <p class="text-secondary m-0">{{ user.email }} • Master Admin</p>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="glass-card">
+                            <h5 class="fw-700 mb-4">Personal Information</h5>
+                            <form action="/settings/update" method="POST">
+                                <div class="row g-4">
+                                    <div class="col-md-6">
+                                        <label class="form-label small text-secondary">Full Name</label>
+                                        <input type="text" name="name" class="form-control" value="{{ user.name }}" required placeholder="Enter your full name">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small text-secondary">Email Address</label>
+                                        <input type="email" name="email" class="form-control" value="{{ user.email }}" required placeholder="Enter your email">
+                                    </div>
+                                    
+                                    <div class="col-md-12 mt-5">
+                                        <div class="p-4 rounded-4" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08);">
+                                            <h6 class="fw-700 mb-3"><i class="bi bi-shield-lock me-2 text-warning"></i>Security Upgrade</h6>
+                                            <div class="row align-items-end g-3">
+                                                <div class="col-md-8">
+                                                    <label class="form-label small text-secondary">New Password</label>
+                                                    <input type="password" name="new_password" class="form-control" placeholder="Leave blank to keep current">
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <button type="submit" class="btn btn-save w-100">Save Changes</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="glass-card h-100">
+                            <h5 class="fw-700 mb-4">System Identity</h5>
+                            <div class="d-flex align-items-center gap-3 mb-4">
+                                <div class="p-3 rounded-4 bg-primary bg-opacity-10 text-primary"><i class="bi bi-fingerprint fs-4"></i></div>
+                                <div>
+                                    <div class="small text-secondary">User ID</div>
+                                    <div class="fw-700">#{{ user.user_id }}</div>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-3 mb-4">
+                                <div class="p-3 rounded-4 bg-success bg-opacity-10 text-success"><i class="bi bi-calendar-check fs-4"></i></div>
+                                <div>
+                                    <div class="small text-secondary">Member Since</div>
+                                    <div class="fw-700">Jan 2026</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Security Tab -->
+            <div id="tab-security" class="setting-tab" style="display: none;">
+                <h2 class="fw-800 mb-4">Security & Access</h2>
+                <div class="glass-card mb-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="fw-700 m-0">Two-Factor Authentication</h6>
+                            <p class="text-secondary small m-0">Add an extra layer of security to your account.</p>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch">
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-card">
+                    <h6 class="fw-700 mb-3">Connected Devices</h6>
+                    <div class="d-flex justify-content-between align-items-center p-3 rounded-4 bg-white bg-opacity-5">
+                        <div class="d-flex align-items-center gap-3">
+                            <i class="bi bi-laptop fs-3 text-secondary"></i>
+                            <div>
+                                <div class="fw-700 small">Windows PC • Chrome</div>
+                                <div class="text-secondary small">Current Session • India</div>
+                            </div>
+                        </div>
+                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">ACTIVE</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Appearance Tab -->
+            <div id="tab-appearance" class="setting-tab" style="display: none;">
+                <h2 class="fw-800 mb-4">Interface Customization</h2>
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <div class="glass-card text-center border-primary">
+                            <div class="p-4 rounded-4 mb-3" style="background: #05070a; border: 1px solid #3b82f6;"></div>
+                            <h6 class="fw-700">Deep Dark (Default)</h6>
+                            <div class="text-primary small"><i class="bi bi-check-circle-fill"></i> Active</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="glass-card text-center opacity-50">
+                            <div class="p-4 rounded-4 mb-3" style="background: #ffffff; border: 1px solid #e2e8f0;"></div>
+                            <h6 class="fw-700">Glass White</h6>
+                            <div class="text-secondary small">Coming Soon</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.setting-tab').forEach(tab => tab.style.display = 'none');
+            // Remove active class from buttons
+            document.querySelectorAll('.nav-link').forEach(btn => btn.classList.remove('active'));
+            
+            // Show target tab
+            document.getElementById('tab-' + tabName).style.display = 'block';
+            // Set active button
+            document.getElementById('btn-' + tabName).classList.add('active');
+        }
+    </script>
+    {% include 'ai_widget.html' %}
+</body>
+</html>
