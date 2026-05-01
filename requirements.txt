@@ -1,37 +1,13 @@
-# ─────────────────────────────────────────
-#  Nexus ERP System — Python Dependencies
-#  Railway/Render Compatible
-# ─────────────────────────────────────────
-
-# Web Framework
 Flask==3.1.0
 Werkzeug==3.1.3
-
-# Database
 PyMySQL==1.1.1
-
-# Environment Variables
 python-dotenv==1.1.0
-
-# HTTP Requests (AI integration, external APIs)
 requests==2.32.3
-
-# WSGI Server (Production — Railway / Render)
 gunicorn==23.0.0
-
-# PDF Generation (Reports)
 reportlab==4.4.0
 fpdf2==2.8.3
-
-# Excel / CSV Export
 openpyxl==3.1.5
-
-# AI Integration
 google-generativeai==0.8.5
 openai==1.79.0
-
-# Date utilities
 python-dateutil==2.9.0
-
-# Image handling
 Pillow==11.2.1
