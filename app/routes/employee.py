@@ -26,7 +26,7 @@ def employee_list():
                 cursor.execute(sql, (f'%{search_query}%', f'%{search_query}%', f'%{search_query}%'))
             else:
                 sql = """
-                    SELECT e.emp_id as id, u.email, u.user_id as user_id, 
+                    SELECT e.emp_id as id, u.email, u.user_id as user_id, u.name,
                            e.department, e.salary, e.hire_date
                     FROM employee e
                     JOIN users u ON e.user_id = u.user_id

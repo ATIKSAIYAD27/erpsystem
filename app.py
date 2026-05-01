@@ -1,8 +1,12 @@
 from flask import Flask, session, redirect
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env
+load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = 'erpsystem_secret_key'
+app.secret_key = os.environ.get('SECRET_KEY', 'erpsystem_secret_key_default_123')
 
 # Register Blueprints
 from app.routes.auth import auth_bp
