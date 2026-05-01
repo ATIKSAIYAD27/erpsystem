@@ -1,6 +1,0 @@
-flask
-pymysql
-gunicorn
-python-dotenv
-werkzeug
-requests
