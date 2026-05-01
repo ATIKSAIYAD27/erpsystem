@@ -95,9 +95,7 @@ This project can be deployed on:
 
 ---
 
-## 📸 Screenshots
 
-(Add your screenshots here)
 
 ---
 
