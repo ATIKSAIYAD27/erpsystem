@@ -1,16 +1,19 @@
 import pymysql
+import os
+from dotenv import load_dotenv
 
-DB_CONFIG = {
-    'host': 'localhost',
-    'port': 3307,
-    'user': 'root',
-    'password': '',
-    'database': 'erpsystem'
-}
+# Load .env file
+load_dotenv()
 
 def create_table():
     try:
-        conn = pymysql.connect(**DB_CONFIG)
+        conn = pymysql.connect(
+            host=os.environ.get('DB_HOST', 'localhost'),
+            port=int(os.environ.get('DB_PORT', 3306)),
+            user=os.environ.get('DB_USER', 'root'),
+            password=os.environ.get('DB_PASSWORD', ''),
+            database=os.environ.get('DB_NAME', 'erpsystem')
+        )
         with conn.cursor() as cursor:
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS notifications (
@@ -19,7 +22,8 @@ def create_table():
                     message TEXT NOT NULL,
                     type VARCHAR(20) DEFAULT 'info',
                     is_read BOOLEAN DEFAULT FALSE,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
                 )
             """)
             

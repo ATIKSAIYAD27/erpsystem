@@ -73,6 +73,11 @@ def register():
                     "INSERT INTO users (name, email, password_hash, role_id) VALUES (%s, %s, %s, %s)",
                     (name, email, hashed_pw, role_id)
                 )
+                
+                # Notify Admin
+                from app.utils import notify_admin
+                notify_admin(f"New user registered: {name} ({email})", 'info')
+
             conn.commit()
             conn.close()
             flash('Registration successful! Please login.', 'success')

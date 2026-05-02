@@ -87,6 +87,12 @@ def add_task():
                 INSERT INTO task (project_id, assigned_to, title, deadline, status)
                 VALUES (%s, %s, %s, %s, 'Pending')
             """, (project_id, assigned_to, title, deadline))
+            
+            # Notify the assignee
+            if assigned_to:
+                from app.utils import create_notification
+                create_notification(assigned_to, f"New task assigned: {title}. Deadline: {deadline}", 'info')
+                
         conn.commit()
         conn.close()
         flash('New task created successfully.', 'success')

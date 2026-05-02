@@ -62,6 +62,11 @@ def apply_leave():
                 INSERT INTO leaves (emp_id, leave_type, start_date, end_date, reason)
                 VALUES (%s, %s, %s, %s, %s)
             """, (emp['emp_id'], leave_type, start_date, end_date, reason))
+            
+            # Notify Admin
+            from app.utils import notify_admin
+            notify_admin(f"New leave request from employee ID {emp['emp_id']} ({leave_type})", 'warning')
+
         conn.commit()
         conn.close()
         flash('Leave request submitted successfully!', 'success')
@@ -79,7 +84,21 @@ def leave_action(leave_id, status):
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
+            # Get employee user_id for notification
+            cursor.execute("""
+                SELECT e.user_id, l.leave_type 
+                FROM leaves l 
+                JOIN employee e ON l.emp_id = e.emp_id 
+                WHERE l.leave_id = %s
+            """, (leave_id,))
+            leave_info = cursor.fetchone()
+            
             cursor.execute("UPDATE leaves SET status = %s WHERE leave_id = %s", (status, leave_id))
+            
+            if leave_info:
+                from app.utils import create_notification
+                create_notification(leave_info['user_id'], f"Your {leave_info['leave_type']} leave has been {status}.", 'info' if status == 'Approved' else 'danger')
+
         conn.commit()
         conn.close()
         flash(f'Leave {status} successfully.', 'success')

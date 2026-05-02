@@ -69,6 +69,11 @@ def add_employee():
                 VALUES (%s, %s, %s, %s)
             """
             cursor.execute(sql, (user_id, department, salary, hire_date))
+            
+            # Notify the new employee
+            from app.utils import create_notification
+            create_notification(user_id, f"Welcome! You have been added as an employee in the {department} department.", 'success')
+
         conn.commit()
         conn.close()
         flash('Employee added successfully.', 'success')

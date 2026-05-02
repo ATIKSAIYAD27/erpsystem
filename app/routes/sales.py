@@ -95,6 +95,10 @@ def add_sale():
                 WHERE product_id = %s
             """, (quantity, product_id))
             
+            # Notify Admin about the sale
+            from app.utils import notify_admin
+            notify_admin(f"New Sale: {quantity} units of product ID {product_id} sold for ${total_amount:,.2f}", 'success')
+            
         conn.commit()
         conn.close()
         flash(f'Sale recorded successfully! Inventory updated.', 'success')
