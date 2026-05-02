@@ -86,14 +86,25 @@ def register():
         except Exception as e:
             flash(f'Database error: {str(e)}', 'danger')
 
-    # For GET request, fetch roles
+    # For GET request (and failed POST), fetch roles
+    roles = []
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
             cursor.execute("SELECT role_id, role_name FROM role")
             roles = cursor.fetchall()
+            
+            # Auto-seed if roles table is empty
+            if not roles:
+                cursor.execute("INSERT INTO role (role_name) VALUES ('Admin'), ('Manager'), ('Employee')")
+                conn.commit()
+                cursor.execute("SELECT role_id, role_name FROM role")
+                roles = cursor.fetchall()
         conn.close()
     except Exception as e:
+        print(f"DEBUG: Error fetching roles: {e}")
+        # If table doesn't exist, we might want to know
+        flash(f"System Error: Could not load roles. {str(e)}", "danger")
         roles = []
         
     return render_template('register.html', roles=roles)

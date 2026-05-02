@@ -210,6 +210,8 @@
                         <option value="" disabled selected>Select an organizational role</option>
                         {% for role in roles %}
                         <option value="{{ role.role_id }}" style="background: #1e293b;">{{ role.role_name }}</option>
+                        {% else %}
+                        <option disabled>No roles available. Please contact administrator.</option>
                         {% endfor %}
                     </select>
                 </div>
