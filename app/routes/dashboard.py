@@ -11,7 +11,6 @@ def dashboard():
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
-            # 1. Basic Stats
             cursor.execute("SELECT COUNT(*) as total FROM employee")
             total_employees = cursor.fetchone()['total']
             
@@ -27,7 +26,24 @@ def dashboard():
             cursor.execute("SELECT COUNT(*) as total FROM users")
             total_users = int(cursor.fetchone()['total'])
 
-            # 2. Advanced: Global Activity Feed (Union of Sales, Check-ins, and Tasks)
+            cursor.execute("SELECT COUNT(*) as total FROM product WHERE quantity <= reorder_level")
+            low_stock_count = int(cursor.fetchone()['total'])
+
+            cursor.execute("SELECT SUM(amount) as total FROM expense")
+            total_expenses = float(cursor.fetchone()['total'] or 0)
+
+            cursor.execute("SELECT SUM(net_pay) as total FROM payroll")
+            total_payroll = float(cursor.fetchone()['total'] or 0)
+
+            cursor.execute("""
+                SELECT DATE_FORMAT(sale_date, '%%Y-%%m') as month, SUM(total_amount) as revenue
+                FROM sale
+                WHERE sale_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+                GROUP BY DATE_FORMAT(sale_date, '%%Y-%%m')
+                ORDER BY month
+            """)
+            monthly_sales = cursor.fetchall()
+
             cursor.execute("""
                 (SELECT 'sale' as type, CONCAT('Sale of ', quantity, ' items recorded') as message, sale_date as timestamp FROM sale)
                 UNION
@@ -41,15 +57,23 @@ def dashboard():
 
         conn.close()
 
+        chart_labels = [row['month'] for row in monthly_sales]
+        chart_data = [float(row['revenue']) for row in monthly_sales]
+
         return render_template('dashboard.html', 
                                total_employees=total_employees,
                                total_products=total_products,
                                total_revenue=total_revenue,
                                total_users=total_users,
                                pending_tasks=pending_tasks,
-                               recent_activity=recent_activity)
+                               low_stock_count=low_stock_count,
+                               total_expenses=total_expenses,
+                               total_payroll=total_payroll,
+                               recent_activity=recent_activity,
+                               chart_labels=chart_labels,
+                               chart_data=chart_data)
     except Exception as e:
-        return f"Database Error: {str(e)}"
+        return render_template('500.html'), 500
 
 @dashboard_bp.route('/notifications')
 def notifications():

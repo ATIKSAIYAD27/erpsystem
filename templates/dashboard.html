@@ -265,6 +265,14 @@
             backdrop-filter: blur(15px);
         }
 
+        .glass-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 28px;
+            padding: 30px;
+            backdrop-filter: blur(15px);
+        }
+
         @keyframes fadeSlideUp {
             from { opacity: 0; transform: translateY(30px); }
             to { opacity: 1; transform: translateY(0); }
@@ -315,7 +323,7 @@
     <nav class="sidebar">
         <div class="brand">
             <div class="brand-icon">
-                <i class="bi bi-hexagon-fill"></i>
+                <i class="bi bi-building-fill"></i>
             </div>
             <div class="brand-text">
                 <h3>Nexus ERP</h3>
@@ -361,6 +369,11 @@
             </a>
         </div>
         <div class="nav-item">
+            <a href="/expense-reports" class="nav-link">
+                <i class="bi bi-file-earmark-bar-graph"></i> Expense Reports
+            </a>
+        </div>
+        <div class="nav-item">
             <a href="/inventory" class="nav-link">
                 <i class="bi bi-box-seam-fill"></i> Inventory
             </a>
@@ -371,10 +384,37 @@
             </a>
         </div>
         <div class="nav-item">
+            <a href="/customers" class="nav-link">
+                <i class="bi bi-person-lines-fill"></i> Customers
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="/suppliers" class="nav-link">
+                <i class="bi bi-truck"></i> Suppliers
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="/purchase-orders" class="nav-link">
+                <i class="bi bi-cart-check"></i> Purchase Orders
+            </a>
+        </div>
+        <div class="nav-item">
             <a href="/projects" class="nav-link">
                 <i class="bi bi-kanban"></i> Projects
             </a>
         </div>
+        <div class="nav-item">
+            <a href="/ai-chat" class="nav-link">
+                <i class="bi bi-robot"></i> AI Assistant
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="/ai-analytics" class="nav-link">
+                <i class="bi bi-bar-chart-line-fill"></i> AI Analytics
+            </a>
+        </div>
+        {% if session.get('role_name') == 'Admin' %}<div class="nav-item"><a href="/company-settings" class="nav-link"><i class="bi bi-building-gear"></i> Company Settings</a></div>{% endif %}
+        {% if session.get('role_name') == 'Admin' %}<div class="nav-item"><a href="/audit-log" class="nav-link"><i class="bi bi-journal-text"></i> Audit Log</a></div>{% endif %}
         <div class="nav-item">
             <a href="/notifications" class="nav-link">
                 <i class="bi bi-bell"></i> Alerts
@@ -418,10 +458,6 @@
             <a href="/employee" class="action-btn"><i class="bi bi-person-plus"></i> Add Staff</a>
             <a href="/sales" class="action-btn"><i class="bi bi-cart-plus"></i> New Sale</a>
             <a href="/projects" class="action-btn"><i class="bi bi-plus-square"></i> New Task</a>
-            <button id="btnAnalyze" class="action-btn border-primary" style="background: rgba(59, 130, 246, 0.1); color: var(--accent-blue);">
-                <i class="bi bi-stars"></i> AI Business Scan
-            </button>
-            <span id="aiSummaryText" class="ms-2 text-secondary" style="font-size: 13px; font-style: italic; align-self: center;"></span>
         </div>
 
         <!-- Metrics Grid -->
@@ -438,9 +474,9 @@
             <div class="col-xl-3 col-lg-6">
                 <div class="stat-card animate-up delay-2">
                     <div class="card-icon-wrapper green-glow">
-                        <i class="bi bi-currency-dollar"></i>
+                        <i class="bi bi-currency-rupee"></i>
                     </div>
-                    <h2 class="stat-value">${{ "{:,.0f}".format(total_revenue) }}</h2>
+                    <h2 class="stat-value">{{ total_revenue|indian_currency }}</h2>
                     <div class="stat-label">Gross Revenue</div>
                 </div>
             </div>
@@ -451,6 +487,11 @@
                     </div>
                     <h2 class="stat-value">{{ total_products }}</h2>
                     <div class="stat-label">Stock Items</div>
+                    {% if low_stock_count > 0 %}
+                    <div style="font-size: 12px; color: var(--accent-orange); margin-top: 6px;">
+                        <i class="bi bi-exclamation-triangle"></i> {{ low_stock_count }} low stock
+                    </div>
+                    {% endif %}
                 </div>
             </div>
             <div class="col-xl-3 col-lg-6">
@@ -460,6 +501,37 @@
                     </div>
                     <h2 class="stat-value">{{ pending_tasks }}</h2>
                     <div class="stat-label">Pending Actions</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Finance Row -->
+        <div class="row g-4 mb-5">
+            <div class="col-xl-4 col-lg-6">
+                <div class="stat-card animate-up delay-2">
+                    <div class="card-icon-wrapper green-glow">
+                        <i class="bi bi-graph-up-arrow"></i>
+                    </div>
+                    <h2 class="stat-value" style="font-size: 24px;">{{ total_revenue|indian_currency }}</h2>
+                    <div class="stat-label">Total Sales</div>
+                </div>
+            </div>
+            <div class="col-xl-4 col-lg-6">
+                <div class="stat-card animate-up delay-3">
+                    <div class="card-icon-wrapper orange-glow">
+                        <i class="bi bi-receipt"></i>
+                    </div>
+                    <h2 class="stat-value" style="font-size: 24px;">{{ total_expenses|indian_currency }}</h2>
+                    <div class="stat-label">Total Expenses</div>
+                </div>
+            </div>
+            <div class="col-xl-4 col-lg-6">
+                <div class="stat-card animate-up delay-4">
+                    <div class="card-icon-wrapper blue-glow">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                    <h2 class="stat-value" style="font-size: 24px;">{{ total_payroll|indian_currency }}</h2>
+                    <div class="stat-label">Total Payroll</div>
                 </div>
             </div>
         </div>
@@ -494,11 +566,59 @@
             </div>
         </div>
 
+        <!-- AI Insights Row -->
+        <div class="row g-4 mb-5">
+            <div class="col-lg-6 animate-up delay-3">
+                <div class="glass-card" style="padding: 25px; border: 1px solid rgba(59,130,246,0.2); background: linear-gradient(135deg, rgba(59,130,246,0.06), rgba(139,92,246,0.06));">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(59,130,246,0.1); display: flex; align-items: center; justify-content: center; color: var(--accent-blue); font-size: 20px;">
+                            <i class="bi bi-robot"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-white mb-0" style="font-weight: 700;">AI Quick Insights</h6>
+                            <span style="font-size: 11px; color: var(--accent-blue); font-weight: 600;">GEMINI POWERED</span>
+                        </div>
+                    </div>
+                    <div id="aiQuickInsights" style="color: var(--text-secondary); font-size: 13.5px; line-height: 1.6;">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                            <span>Generating AI insights...</span>
+                        </div>
+                    </div>
+                    <a href="/ai-chat" class="btn btn-sm mt-3" style="background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); color: var(--accent-blue); border-radius: 10px; font-weight: 600; font-size: 12px;">
+                        <i class="bi bi-chat-dots"></i> Ask Nexus AI
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-6 animate-up delay-4">
+                <div class="glass-card" style="padding: 25px;">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(16,185,129,0.1); display: flex; align-items: center; justify-content: center; color: var(--accent-green); font-size: 20px;">
+                            <i class="bi bi-lightbulb"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-white mb-0" style="font-weight: 700;">Smart Recommendations</h6>
+                            <span style="font-size: 11px; color: var(--accent-green); font-weight: 600;">AI POWERED</span>
+                        </div>
+                    </div>
+                    <div id="aiRecommendations" style="color: var(--text-secondary); font-size: 13.5px; line-height: 1.6;">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <div class="spinner-border spinner-border-sm text-success" role="status"></div>
+                            <span>Analyzing your data...</span>
+                        </div>
+                    </div>
+                    <a href="/ai-analytics" class="btn btn-sm mt-3" style="background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); color: var(--accent-green); border-radius: 10px; font-weight: 600; font-size: 12px;">
+                        <i class="bi bi-bar-chart-line"></i> View Full Analytics
+                    </a>
+                </div>
+            </div>
+        </div>
+
         <div class="row g-4 mb-4">
-            <!-- System Intelligence Log -->
+            <!-- System Activity Log -->
             <div class="col-lg-7 animate-up delay-5">
                 <div class="chart-container h-100">
-                    <h5 class="text-white fw-bold mb-4">Real-time Intelligence Log</h5>
+                    <h5 class="text-white fw-bold mb-4">Real-time Activity Log</h5>
                     <div class="activity-feed" style="max-height: 400px; overflow-y: auto;">
                         {% if recent_activity %}
                         {% for log in recent_activity %}
@@ -537,7 +657,8 @@
         </div>
     </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    {% include 'ai_chat_widget.html' %}
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             // Global Chart Instance Manager to prevent "Spinning/Looping" issue
@@ -556,10 +677,10 @@
                 window.nexusCharts.sales = new Chart(ctx, {
                     type: 'line',
                     data: {
-                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                        labels: {{ (chart_labels or ['No Data']) | tojson | safe }},
                         datasets: [{
-                            label: 'Revenue Growth',
-                            data: [12000, 19000, 15000, 25000, 22000, {{ total_revenue }}],
+                            label: 'Revenue',
+                            data: {{ (chart_data or [0]) | tojson | safe }},
                             borderColor: '#3b82f6',
                             backgroundColor: 'rgba(59, 130, 246, 0.1)',
                             fill: true,
@@ -579,7 +700,7 @@
                             y: { 
                                 display: true, 
                                 grid: { color: 'rgba(255,255,255,0.03)' },
-                                ticks: { callback: (val) => '$' + (val/1000) + 'k' }
+                                ticks: { callback: (val) => 'Rs. ' + (val/1000) + 'k' }
                             },
                             x: { grid: { display: false } }
                         }
@@ -598,7 +719,7 @@
                     data: {
                         labels: ['In Stock', 'Low', 'Out'],
                         datasets: [{
-                            data: [{{ total_products }}, {{ low_stock_count or 1 }}, 2],
+                            data: [{{ total_products or 0 }}, {{ low_stock_count or 0 }}, 2],
                             backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
                             borderWidth: 0,
                             hoverOffset: 15
@@ -618,44 +739,93 @@
                 });
             }
 
-            // Initialize all charts
-            createSalesChart();
-            createStockChart();
+            function createMainChart() {
+                const ctx = document.getElementById('mainChart');
+                if (!ctx) return;
 
-            // AI Analysis Logic
-            const btnAnalyze = document.getElementById('btnAnalyze');
-            if(btnAnalyze) {
-                btnAnalyze.addEventListener('click', async function() {
-                    const btn = this;
-                    const text = document.getElementById('aiSummaryText');
-                    btn.disabled = true;
-                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Scanning...';
-                    text.textContent = 'Processing enterprise data...';
-                    
-                    try {
-                        const response = await fetch('/ai/analyze');
-                        const data = await response.json();
-                        text.textContent = '';
-                        let i = 0;
-                        const fullText = data.summary;
-                        const timer = setInterval(() => {
-                            text.textContent += fullText[i];
-                            i++;
-                            if (i >= fullText.length) {
-                                clearInterval(timer);
-                                btn.disabled = false;
-                                btn.innerHTML = '<i class="bi bi-stars"></i> AI Business Scan';
-                            }
-                        }, 20);
-                    } catch (err) {
-                        text.textContent = 'Intelligence service offline.';
-                        btn.disabled = false;
-                        btn.innerHTML = '<i class="bi bi-stars"></i> AI Business Scan';
+                if (window.nexusCharts.main) window.nexusCharts.main.destroy();
+
+                window.nexusCharts.main = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Sales', 'Expenses', 'Payroll', 'Products', 'Tasks'],
+                        datasets: [{
+                            label: 'Distribution',
+                            data: [{{ total_revenue or 0 }}, {{ total_expenses or 0 }}, {{ total_payroll or 0 }}, {{ total_products or 0 }}, {{ pending_tasks or 0 }}],
+                            backgroundColor: [
+                                'rgba(16, 185, 129, 0.7)',
+                                'rgba(245, 158, 11, 0.7)',
+                                'rgba(59, 130, 246, 0.7)',
+                                'rgba(139, 92, 246, 0.7)',
+                                'rgba(236, 72, 153, 0.7)'
+                            ],
+                            borderColor: ['#10b981', '#f59e0b', '#3b82f6', '#8b5cf6', '#ec4899'],
+                            borderWidth: 2,
+                            borderRadius: 8,
+                            borderSkipped: false
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: {
+                                grid: { color: 'rgba(255,255,255,0.03)' },
+                                ticks: { callback: (val) => 'Rs. ' + (val/1000) + 'k' }
+                            },
+                            x: { grid: { display: false } }
+                        }
                     }
                 });
             }
+
+            // Initialize all charts
+            createSalesChart();
+            createStockChart();
+            createMainChart();
+
+            // Load AI Insights
+            async function loadAIInsights() {
+                try {
+                    const res = await fetch('/api/ai/chat', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({message: 'Give me 3 quick bullet points about my current business health based on the data. Keep it brief.'})
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        document.getElementById('aiQuickInsights').innerHTML = data.response.replace(/\n/g, '<br>');
+                    } else {
+                        document.getElementById('aiQuickInsights').innerHTML = '<span style="color: var(--text-secondary);">AI insights unavailable. <a href="/ai-chat" style="color: var(--accent-blue);">Try the AI Assistant</a></span>';
+                    }
+                } catch(e) {
+                    document.getElementById('aiQuickInsights').innerHTML = '<span style="color: var(--text-secondary);">Connect to AI for insights</span>';
+                }
+            }
+
+            async function loadAIRecommendations() {
+                try {
+                    const res = await fetch('/api/ai/chat', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({message: 'Based on my data, give me 3 specific actionable recommendations to improve my business. Be concise.'})
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        document.getElementById('aiRecommendations').innerHTML = data.response.replace(/\n/g, '<br>');
+                    } else {
+                        document.getElementById('aiRecommendations').innerHTML = '<span style="color: var(--text-secondary);">Recommendations unavailable. <a href="/ai-analytics" style="color: var(--accent-green);">View AI Analytics</a></span>';
+                    }
+                } catch(e) {
+                    document.getElementById('aiRecommendations').innerHTML = '<span style="color: var(--text-secondary);">Connect to AI for recommendations</span>';
+                }
+            }
+
+            loadAIInsights();
+            loadAIRecommendations();
+
         });
     </script>
-    {% include 'ai_widget.html' %}
 </body>
 </html>

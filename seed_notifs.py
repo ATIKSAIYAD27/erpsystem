@@ -15,7 +15,7 @@ def seed_notifs():
                 if not cursor.fetchone():
                     cursor.execute("""
                         INSERT INTO notifications (user_id, message, type) 
-                        VALUES (%s, 'Welcome to Nexus ERP! Your system is now AI-enabled.', 'success')
+                        VALUES (%s, 'Welcome to Nexus ERP! Your system is now active.', 'success')
                     """, (user_id,))
                     cursor.execute("""
                         INSERT INTO notifications (user_id, message, type) 

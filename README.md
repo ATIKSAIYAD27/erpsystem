@@ -1,111 +1,39 @@
-# 🚀 Nexus ERP System
+# Nexus ERP System
 
-A full-featured **Enterprise Resource Planning (ERP)** system built using **Flask, MySQL, HTML, CSS, JavaScript, and Bootstrap**.
+## How to Run on Your PC
 
----
-
-## 📌 Features
-
-### 👥 Human Resource (HR)
-
-* Employee Management
-* Attendance Tracking
-* Leave Management
-* Payroll System
-
-### 📊 Dashboard
-
-* Real-time analytics
-* Charts & reports
-
-### 💰 Finance
-
-* Expense tracking
-* Financial overview
-
-### 📦 Inventory
-
-* Product & stock management
-
-### 🛒 Sales
-
-* Sales tracking
-* Customer management
-
-### 📁 Projects
-
-* Task & project management (Kanban board)
-
-### 📧 Messaging System
-
-* Internal mail system
-
-### 🔔 Notifications
-
-* Real-time alerts
-
-### 🤖 AI Integration
-
-* Smart AI assistant (Gemini/OpenAI based)
-
----
-
-## 🛠️ Tech Stack
-
-* **Backend:** Flask (Python)
-* **Database:** MySQL
-* **Frontend:** HTML, CSS, JavaScript, Bootstrap
-* **Charts:** Chart.js
-* **Icons:** Bootstrap Icons
-
----
-
-## ⚙️ Installation (Local Setup)
+### Step 1: Open terminal in project folder
 
 ```bash
-git clone https://github.com/ATIKSAIYAD27/erpsystem.git
-cd erpsystem
-pip install -r requirements.txt
+cd C:\Users\atiks\OneDrive\Documents\erpsystem
+```
+
+### Step 2: Activate virtual environment
+
+```bash
+venv\Scripts\activate
+```
+
+### Step 3: Initialize database (first time only)
+
+```bash
+python init_db.py
+python migrate_db.py
+```
+
+### Step 4: Start the server
+
+```bash
 python app.py
 ```
 
----
+### Step 5: Open browser and go to
 
-## 🔐 Environment Variables
-
-Create a `.env` file:
-
-```env
-DB_HOST=localhost
-DB_PORT=3307
-DB_USER=root
-DB_PASSWORD=
-DB_NAME=erpsystem
+```
+http://127.0.0.1:5000
 ```
 
----
+### Login
 
-## 🚀 Deployment
-
-This project can be deployed on:
-
-* Railway
-* Render
-* PythonAnywhere
-
----
-
-
-
----
-
-## 👨‍💻 Author
-
-**Atik Saiyad**
-GitHub: https://github.com/ATIKSAIYAD27
-
----
-
-## ⭐ Support
-
-If you like this project, give it a ⭐ on GitHub!
+- Email: admin@erp.com
+- Password: admin123

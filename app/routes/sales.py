@@ -1,20 +1,18 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 import pymysql
 from datetime import datetime
+from app.utils import login_required, admin_required, manager_or_admin_required, log_audit
 
 sales_bp = Blueprint('sales', __name__)
 
 from app.db import get_db_connection
 
 @sales_bp.route('/sales')
+@manager_or_admin_required
 def sales_dashboard():
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
-
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
-            # Fetch recent sales with customer and product details
             sql = """
                 SELECT s.sale_id, s.quantity, s.total_amount, s.sale_date,
                        c.name as customer_name, p.name as product_name
@@ -27,14 +25,12 @@ def sales_dashboard():
             cursor.execute(sql)
             recent_sales = cursor.fetchall()
             
-            # Fetch data for forms
             cursor.execute("SELECT customer_id, name FROM customer ORDER BY name")
             customers = cursor.fetchall()
             
             cursor.execute("SELECT product_id, name, unit_price, quantity as stock_left FROM product WHERE quantity > 0")
             products = cursor.fetchall()
             
-            # Fetch total revenue
             cursor.execute("SELECT SUM(total_amount) as total FROM sale")
             total_revenue = cursor.fetchone()['total'] or 0
 
@@ -51,10 +47,8 @@ def sales_dashboard():
         return render_template('sales.html', sales=[], customers=[], products=[], total_revenue=0)
 
 @sales_bp.route('/sales/add', methods=['POST'])
+@manager_or_admin_required
 def add_sale():
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
-
     customer_id = request.form.get('customer_id')
     product_id = request.form.get('product_id')
     quantity = int(request.form.get('quantity', 0))
@@ -67,7 +61,6 @@ def add_sale():
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
-            # 1. Fetch product price and check stock
             cursor.execute("SELECT unit_price, quantity FROM product WHERE product_id = %s", (product_id,))
             product = cursor.fetchone()
             
@@ -79,31 +72,105 @@ def add_sale():
                 flash(f'Insufficient stock! Only {product["quantity"]} units available.', 'warning')
                 return redirect(url_for('sales.sales_dashboard'))
                 
-            # 2. Calculate total amount
             total_amount = float(product['unit_price']) * quantity
             
-            # 3. Insert Sale
             cursor.execute("""
                 INSERT INTO sale (customer_id, product_id, quantity, total_amount, sale_date)
                 VALUES (%s, %s, %s, %s, %s)
             """, (customer_id, product_id, quantity, total_amount, sale_date))
             
-            # 4. Update Inventory (Deduct stock)
             cursor.execute("""
                 UPDATE product 
                 SET quantity = quantity - %s 
                 WHERE product_id = %s
             """, (quantity, product_id))
             
-            # Notify Admin about the sale
             from app.utils import notify_admin
-            notify_admin(f"New Sale: {quantity} units of product ID {product_id} sold for ${total_amount:,.2f}", 'success')
+            notify_admin(f"New Sale: {quantity} units of product ID {product_id} sold for Rs.{total_amount:,.2f}", 'success')
             
         conn.commit()
         conn.close()
+        log_audit(session['user_id'], f"Recorded sale: {quantity} units of product {product_id} for Rs.{total_amount:,.2f}")
         flash(f'Sale recorded successfully! Inventory updated.', 'success')
 
     except Exception as e:
         flash(f'Error processing sale: {str(e)}', 'danger')
+
+    return redirect(url_for('sales.sales_dashboard'))
+
+@sales_bp.route('/sales/edit/<int:sale_id>', methods=['POST'])
+@manager_or_admin_required
+def edit_sale(sale_id):
+    new_quantity = int(request.form.get('quantity', 0))
+
+    if new_quantity <= 0:
+        flash('Quantity must be greater than zero.', 'danger')
+        return redirect(url_for('sales.sales_dashboard'))
+
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT product_id, quantity, total_amount FROM sale WHERE sale_id = %s", (sale_id,))
+            old_sale = cursor.fetchone()
+
+            if not old_sale:
+                flash('Sale record not found.', 'danger')
+                return redirect(url_for('sales.sales_dashboard'))
+
+            cursor.execute("SELECT unit_price, quantity FROM product WHERE product_id = %s", (old_sale['product_id'],))
+            product = cursor.fetchone()
+
+            if not product:
+                flash('Product not found.', 'danger')
+                return redirect(url_for('sales.sales_dashboard'))
+
+            old_qty = old_sale['quantity']
+            qty_diff = new_quantity - old_qty
+
+            if product['quantity'] < qty_diff:
+                flash(f'Insufficient stock! Only {product["quantity"]} additional units available.', 'warning')
+                return redirect(url_for('sales.sales_dashboard'))
+
+            new_total = float(product['unit_price']) * new_quantity
+
+            cursor.execute("""
+                UPDATE sale SET quantity = %s, total_amount = %s WHERE sale_id = %s
+            """, (new_quantity, new_total, sale_id))
+
+            cursor.execute("""
+                UPDATE product SET quantity = quantity - %s WHERE product_id = %s
+            """, (qty_diff, old_sale['product_id']))
+
+        conn.commit()
+        conn.close()
+        log_audit(session['user_id'], f"Edited sale {sale_id}: quantity {old_qty} -> {new_quantity}")
+        flash('Sale updated and inventory adjusted.', 'success')
+
+    except Exception as e:
+        flash(f'Error editing sale: {str(e)}', 'danger')
+
+    return redirect(url_for('sales.sales_dashboard'))
+
+@sales_bp.route('/sales/delete/<int:sale_id>')
+@admin_required
+def delete_sale(sale_id):
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT product_id, quantity FROM sale WHERE sale_id = %s", (sale_id,))
+            sale = cursor.fetchone()
+            
+            if sale:
+                cursor.execute("UPDATE product SET quantity = quantity + %s WHERE product_id = %s", 
+                              (sale['quantity'], sale['product_id']))
+                
+                cursor.execute("DELETE FROM sale WHERE sale_id = %s", (sale_id,))
+                
+        conn.commit()
+        conn.close()
+        log_audit(session['user_id'], f"Deleted sale {sale_id}")
+        flash('Sale record deleted and inventory restored.', 'success')
+    except Exception as e:
+        flash(f'Error deleting sale: {str(e)}', 'danger')
 
     return redirect(url_for('sales.sales_dashboard'))

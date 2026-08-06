@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus AI Assistant</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #05070a;
+            --sidebar-bg: #0a0f19;
+            --card-bg: rgba(15, 23, 42, 0.6);
+            --card-border: rgba(255, 255, 255, 0.04);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+        }
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-color);
+            color: var(--text-primary);
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            background-image:
+                radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.03) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.03) 0%, transparent 40%);
+        }
+
+        .sidebar {
+            width: 280px;
+            height: 100vh;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--card-border);
+            padding: 35px 25px;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+        .brand { display: flex; align-items: center; gap: 15px; margin-bottom: 40px; }
+        .brand-icon {
+            width: 45px; height: 45px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; color: white;
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+        }
+        .brand-text h3 { margin: 0; font-weight: 800; font-size: 22px; background: linear-gradient(to right, #fff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .nav-item { margin-bottom: 5px; }
+        .nav-link {
+            display: flex; align-items: center; gap: 15px;
+            padding: 14px 20px; border-radius: 12px;
+            color: var(--text-secondary); font-weight: 500; font-size: 15px;
+            transition: all 0.3s ease; text-decoration: none;
+        }
+        .nav-link:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); transform: translateX(5px); }
+        .nav-link.active { color: white; background: linear-gradient(to right, rgba(59, 130, 246, 0.1), transparent); border-left: 4px solid var(--accent-blue); }
+        .nav-link.active i { color: var(--accent-blue); }
+        .logout-btn { margin-top: auto; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
+        .logout-btn:hover { background: #ef4444; color: white; transform: translateY(-2px); }
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 900px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        .chat-header {
+            padding: 30px 40px 20px;
+            border-bottom: 1px solid var(--card-border);
+        }
+        .chat-header h1 {
+            font-size: 28px; font-weight: 800; margin: 0;
+            background: linear-gradient(to right, #fff, #94a3b8);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .chat-header p { color: var(--text-secondary); margin: 5px 0 0; font-size: 14px; }
+        .status-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 11px; padding: 4px 10px; border-radius: 20px;
+            background: rgba(16,185,129,0.1); color: #10b981;
+            font-weight: 600; margin-top: 8px;
+        }
+        .status-badge .dot { width: 6px; height: 6px; background: #10b981; border-radius: 50%; }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px 40px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .msg {
+            max-width: 80%;
+            padding: 16px 20px;
+            border-radius: 20px;
+            font-size: 14.5px;
+            line-height: 1.6;
+        }
+        .msg.user {
+            align-self: flex-end;
+            background: linear-gradient(135deg, #3b82f6, #6366f1);
+            color: white;
+            border-bottom-right-radius: 6px;
+        }
+        .msg.bot {
+            align-self: flex-start;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            color: #e2e8f0;
+            border-bottom-left-radius: 6px;
+        }
+        .msg.bot .label { font-size: 11px; color: var(--accent-blue); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+        .msg .time { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 6px; }
+        .msg.bot .time { color: var(--text-secondary); }
+
+        .typing-indicator {
+            display: flex; gap: 6px; padding: 16px 20px;
+            align-self: flex-start;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            border-bottom-left-radius: 6px;
+        }
+        .typing-indicator span {
+            width: 8px; height: 8px; background: var(--accent-blue); border-radius: 50%;
+            animation: typingDot 1.4s infinite;
+        }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typingDot {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+            30% { transform: translateY(-8px); opacity: 1; }
+        }
+
+        .chat-input-area {
+            padding: 20px 40px 30px;
+            border-top: 1px solid var(--card-border);
+        }
+        .quick-prompts {
+            display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap;
+        }
+        .quick-prompt {
+            font-size: 12px; padding: 7px 14px; border-radius: 12px;
+            background: rgba(255,255,255,0.03); border: 1px solid var(--card-border);
+            color: var(--text-secondary); cursor: pointer; transition: 0.2s;
+        }
+        .quick-prompt:hover { background: rgba(59,130,246,0.1); border-color: rgba(59,130,246,0.3); color: var(--accent-blue); }
+        .input-row { display: flex; gap: 12px; }
+        .input-row input {
+            flex: 1; background: rgba(255,255,255,0.04); border: 1px solid var(--card-border);
+            border-radius: 16px; padding: 14px 20px; color: white; font-size: 14.5px; outline: none;
+            font-family: 'Outfit', sans-serif; transition: 0.2s;
+        }
+        .input-row input:focus { border-color: rgba(59,130,246,0.4); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+        .input-row input::placeholder { color: #475569; }
+        .send-btn {
+            width: 50px; height: 50px; border-radius: 16px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border: none; color: white; font-size: 18px; cursor: pointer;
+            transition: 0.2s; display: flex; align-items: center; justify-content: center;
+        }
+        .send-btn:hover { transform: scale(1.05); }
+        .send-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .empty-state {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 40px;
+        }
+        .empty-state .ai-icon {
+            width: 80px; height: 80px; border-radius: 24px;
+            background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.15));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 36px; color: var(--accent-blue); margin-bottom: 20px;
+        }
+        .empty-state h3 { font-weight: 700; margin-bottom: 8px; }
+        .empty-state p { color: var(--text-secondary); font-size: 14px; }
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="brand">
+            <div class="brand-icon"><i class="bi bi-building-fill"></i></div>
+            <div class="brand-text"><h3>Nexus ERP</h3></div>
+        </div>
+        <div class="nav-item"><a href="/dashboard" class="nav-link"><i class="bi bi-grid-1x2-fill"></i> Overview</a></div>
+        <div class="nav-item"><a href="/employee" class="nav-link"><i class="bi bi-people-fill"></i> Workforce</a></div>
+        <div class="nav-item"><a href="/attendance" class="nav-link"><i class="bi bi-clock-history"></i> Attendance</a></div>
+        <div class="nav-item"><a href="/leaves" class="nav-link"><i class="bi bi-calendar2-week"></i> Leave Portal</a></div>
+        <div class="nav-item"><a href="/payroll" class="nav-link"><i class="bi bi-cash-stack"></i> Payroll</a></div>
+        <div class="nav-item"><a href="/finance" class="nav-link"><i class="bi bi-wallet2"></i> Finance Hub</a></div>
+        <div class="nav-item"><a href="/inventory" class="nav-link"><i class="bi bi-box-seam-fill"></i> Inventory</a></div>
+        <div class="nav-item"><a href="/sales" class="nav-link"><i class="bi bi-graph-up-arrow"></i> Sales & CRM</a></div>
+        <div class="nav-item"><a href="/projects" class="nav-link"><i class="bi bi-kanban"></i> Projects</a></div>
+        <div class="nav-item"><a href="/ai-chat" class="nav-link active"><i class="bi bi-robot"></i> AI Assistant</a></div>
+        <div class="nav-item"><a href="/ai-analytics" class="nav-link"><i class="bi bi-bar-chart-line-fill"></i> AI Analytics</a></div>
+        <a href="{{ url_for('auth.logout') }}" class="nav-link logout-btn"><i class="bi bi-power"></i> Secure Logout</a>
+    </nav>
+
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1><i class="bi bi-robot" style="margin-right: 10px;"></i>Nexus AI Assistant</h1>
+            <p>Your intelligent business analyst powered by Google Gemini</p>
+            <div class="status-badge"><div class="dot"></div> Online & Ready</div>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+            <div class="empty-state" id="emptyState">
+                <div class="ai-icon"><i class="bi bi-stars"></i></div>
+                <h3>Ask Nexus AI Anything</h3>
+                <p>Get instant insights about your sales, inventory, expenses, and more</p>
+            </div>
+        </div>
+
+        <div class="chat-input-area">
+            <div class="quick-prompts">
+                <button class="quick-prompt" data-msg="What's my total revenue this month?">Total Revenue</button>
+                <button class="quick-prompt" data-msg="Which products are low on stock?">Low Stock Alert</button>
+                <button class="quick-prompt" data-msg="Summarize my expenses by category">Expense Summary</button>
+                <button class="quick-prompt" data-msg="Show top 5 customers by revenue">Top Customers</button>
+                <button class="quick-prompt" data-msg="Any unusual expenses this month?">Anomaly Detection</button>
+                <button class="quick-prompt" data-msg="Generate a business summary for this week">Weekly Summary</button>
+            </div>
+            <div class="input-row">
+                <input type="text" id="chatInput" placeholder="Ask about your business data..." autocomplete="off">
+                <button class="send-btn" id="sendBtn"><i class="bi bi-send-fill"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        const chatMessages = document.getElementById('chatMessages');
+        const chatInput = document.getElementById('chatInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const emptyState = document.getElementById('emptyState');
+
+        function getTimestamp() {
+            return new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'});
+        }
+
+        function addMessage(text, isUser) {
+            if (emptyState) emptyState.remove();
+            const div = document.createElement('div');
+            div.className = 'msg ' + (isUser ? 'user' : 'bot');
+            if (!isUser) div.innerHTML = '<div class="label"><i class="bi bi-robot"></i> Nexus AI</div>';
+            div.appendChild(document.createTextNode(text));
+            const time = document.createElement('div');
+            time.className = 'time';
+            time.textContent = getTimestamp();
+            div.appendChild(time);
+            chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function showTyping() {
+            if (emptyState) emptyState.remove();
+            const div = document.createElement('div');
+            div.className = 'typing-indicator';
+            div.id = 'typingIndicator';
+            div.innerHTML = '<span></span><span></span><span></span>';
+            chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function hideTyping() {
+            const t = document.getElementById('typingIndicator');
+            if (t) t.remove();
+        }
+
+        async function sendMessage(text) {
+            if (!text.trim()) return;
+            addMessage(text, true);
+            chatInput.value = '';
+            sendBtn.disabled = true;
+            showTyping();
+
+            try {
+                const res = await fetch('/api/ai/chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({message: text})
+                });
+                const data = await res.json();
+                hideTyping();
+                addMessage(data.response || 'No response received.', false);
+            } catch(e) {
+                hideTyping();
+                addMessage('Connection error. Please check your network and try again.', false);
+            }
+            sendBtn.disabled = false;
+            chatInput.focus();
+        }
+
+        sendBtn.addEventListener('click', () => sendMessage(chatInput.value));
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(chatInput.value); }
+        });
+        document.querySelectorAll('.quick-prompt').forEach(btn => {
+            btn.addEventListener('click', () => sendMessage(btn.dataset.msg));
+        });
+        chatInput.focus();
+    })();
+    </script>
+</body>
+</html>

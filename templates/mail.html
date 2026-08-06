@@ -199,15 +199,34 @@
             <h4 class="m-0 fw-800">Nexus Mail</h4>
         </div>
 
-        <a href="/dashboard" class="nav-link"><i class="bi bi-grid-1x2-fill"></i> Dashboard</a>
+        <a href="/dashboard" class="nav-link"><i class="bi bi-grid-1x2-fill"></i> Overview</a>
+        <a href="/employee" class="nav-link"><i class="bi bi-people-fill"></i> Workforce</a>
+        <a href="/attendance" class="nav-link"><i class="bi bi-clock-history"></i> Attendance</a>
+        <a href="/leaves" class="nav-link"><i class="bi bi-calendar2-week"></i> Leave Portal</a>
+        <a href="/payroll" class="nav-link"><i class="bi bi-cash-stack"></i> Payroll</a>
         <a href="/mail" class="nav-link active">
-            <i class="bi bi-envelope-fill"></i> Inbox
+            <i class="bi bi-envelope-at-fill"></i> Nexus Mail
             {% if mail_count > 0 %}
-            <span class="badge rounded-pill bg-primary ms-auto">{{ mail_count }}</span>
+            <span class="badge rounded-pill bg-primary ms-auto" style="font-size: 10px;">{{ mail_count }}</span>
             {% endif %}
         </a>
-        <a href="/employee" class="nav-link"><i class="bi bi-people"></i> Workforce</a>
-        <a href="/inventory" class="nav-link"><i class="bi bi-box-seam"></i> Inventory</a>
+        <a href="/finance" class="nav-link"><i class="bi bi-wallet2"></i> Finance Hub</a>
+        <a href="/expense-reports" class="nav-link"><i class="bi bi-file-earmark-bar-graph"></i> Expense Reports</a>
+        <a href="/inventory" class="nav-link"><i class="bi bi-box-seam-fill"></i> Inventory</a>
+        <a href="/sales" class="nav-link"><i class="bi bi-graph-up-arrow"></i> Sales & CRM</a>
+        <a href="/customers" class="nav-link"><i class="bi bi-person-lines-fill"></i> Customers</a>
+        <a href="/suppliers" class="nav-link"><i class="bi bi-truck"></i> Suppliers</a>
+        <a href="/purchase-orders" class="nav-link"><i class="bi bi-cart-check"></i> Purchase Orders</a>
+        <a href="/projects" class="nav-link"><i class="bi bi-kanban"></i> Projects</a>
+        {% if session.get('role_name') == 'Admin' %}<a href="/company-settings" class="nav-link"><i class="bi bi-building-gear"></i> Company Settings</a>{% endif %}
+        {% if session.get('role_name') == 'Admin' %}<a href="/audit-log" class="nav-link"><i class="bi bi-journal-text"></i> Audit Log</a>{% endif %}
+        <a href="/notifications" class="nav-link">
+            <i class="bi bi-bell"></i> Alerts
+            {% if notif_count > 0 %}
+            <span class="badge rounded-pill bg-danger ms-auto" style="font-size: 10px;">{{ notif_count }}</span>
+            {% endif %}
+        </a>
+        <a href="/settings" class="nav-link"><i class="bi bi-gear-fill"></i> Settings</a>
         
         <div class="mt-auto">
             <a href="{{ url_for('auth.logout') }}" class="nav-link text-danger"><i class="bi bi-power"></i> Logout</a>
@@ -346,6 +365,6 @@
             viewModal.show();
         }
     </script>
-    {% include 'ai_widget.html' %}
+    
 </body>
 </html>

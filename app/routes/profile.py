@@ -20,7 +20,7 @@ def index():
         return render_template('profile.html', user=user)
     except Exception as e:
         flash(f'Error: {str(e)}', 'danger')
-        return redirect(url_for('dashboard.index'))
+        return redirect(url_for('dashboard.dashboard'))
 
 @profile_bp.route('/settings/update', methods=['POST'])
 def update_profile():
@@ -37,7 +37,7 @@ def update_profile():
         with conn.cursor() as cursor:
             if new_password:
                 hashed_password = generate_password_hash(new_password)
-                cursor.execute("UPDATE users SET name=%s, email=%s, password=%s WHERE user_id=%s", (name, email, hashed_password, user_id))
+                cursor.execute("UPDATE users SET name=%s, email=%s, password_hash=%s WHERE user_id=%s", (name, email, hashed_password, user_id))
             else:
                 cursor.execute("UPDATE users SET name=%s, email=%s WHERE user_id=%s", (name, email, user_id))
         conn.commit()

@@ -1,34 +1,38 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, jsonify
 import pymysql
 from datetime import datetime
+import pytz
+import os
 
 hr_bp = Blueprint('hr', __name__)
 
+def get_current_time():
+    tz_name = os.environ.get('TZ', 'Asia/Kolkata')
+    tz = pytz.timezone(tz_name)
+    return datetime.now(tz)
+
 from app.db import get_db_connection
+from app.utils import login_required, admin_required, manager_or_admin_required, log_audit
 
 @hr_bp.route('/attendance')
+@login_required
 def attendance_dashboard():
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
-
     user_id = session['user_id']
-    today = datetime.now().date()
+    now = get_current_time()
+    today = now.date()
     
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
-            # Check if current user is an employee
             cursor.execute("SELECT emp_id FROM employee WHERE user_id = %s", (user_id,))
             emp_record = cursor.fetchone()
             emp_id = emp_record['emp_id'] if emp_record else None
             
-            # Get current user's attendance for today
             my_attendance = None
             if emp_id:
                 cursor.execute("SELECT * FROM attendance WHERE emp_id = %s AND date = %s", (emp_id, today))
                 my_attendance = cursor.fetchone()
                 
-            # Get all attendance records for today (for Admin/Manager view)
             cursor.execute("""
                 SELECT a.*, u.name as employee_name, u.email, e.department 
                 FROM attendance a
@@ -39,7 +43,6 @@ def attendance_dashboard():
             """, (today,))
             todays_attendance = cursor.fetchall()
             
-            # Fetch pending leave requests
             cursor.execute("""
                 SELECT l.*, u.name as employee_name
                 FROM leaves l
@@ -62,22 +65,19 @@ def attendance_dashboard():
         return render_template('attendance.html', my_attendance=None, todays_attendance=[], leave_requests=[], emp_id=None)
 
 @hr_bp.route('/attendance/check', methods=['POST'])
+@login_required
 def process_attendance():
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
-
     user_id = session['user_id']
-    action = request.form.get('action') # 'check_in' or 'check_out'
+    action = request.form.get('action')
     
-    # Extract client IP for anti-proxy auditing (USP Feature)
     client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
-    today = datetime.now().date()
-    current_time = datetime.now().time()
+    now = get_current_time()
+    today = now.date()
+    current_time = now.time()
 
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
-            # Ensure user is an employee
             cursor.execute("SELECT emp_id FROM employee WHERE user_id = %s", (user_id,))
             emp = cursor.fetchone()
             if not emp:
@@ -86,7 +86,6 @@ def process_attendance():
                 
             emp_id = emp['emp_id']
             
-            # Check existing record
             cursor.execute("SELECT * FROM attendance WHERE emp_id = %s AND date = %s", (emp_id, today))
             record = cursor.fetchone()
 
@@ -94,7 +93,6 @@ def process_attendance():
                 if record:
                     flash('You have already checked in today.', 'info')
                 else:
-                    # Determine Late status (Assuming 09:30:00 is late threshold)
                     is_late = current_time > datetime.strptime('09:30:00', '%H:%M:%S').time()
                     status = 'Late' if is_late else 'Present'
                     
@@ -103,7 +101,6 @@ def process_attendance():
                         VALUES (%s, %s, %s, %s)
                     """, (emp_id, today, status, current_time))
                     
-                    # Log audit IP
                     cursor.execute("INSERT INTO audit_log (user_id, action, ip_address) VALUES (%s, %s, %s)", 
                                   (user_id, f"Check-in at {current_time}", client_ip))
                     flash('Checked in successfully.', 'success')
@@ -129,18 +126,85 @@ def process_attendance():
 
     return redirect(url_for('hr.attendance_dashboard'))
 
-@hr_bp.route('/payroll')
-def payroll_dashboard():
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
+@hr_bp.route('/attendance/history')
+@login_required
+def attendance_history():
+    user_id = session['user_id']
+    start_date = request.args.get('start_date', '')
+    end_date = request.args.get('end_date', '')
 
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT emp_id FROM employee WHERE user_id = %s", (user_id,))
+            emp_record = cursor.fetchone()
+
+            is_privileged = session.get('role_name') in ('Admin', 'Manager')
+
+            if is_privileged:
+                base_sql = """
+                    SELECT a.*, u.name as employee_name, e.department 
+                    FROM attendance a
+                    JOIN employee e ON a.emp_id = e.emp_id
+                    JOIN users u ON e.user_id = u.user_id
+                """
+                params = []
+                conditions = []
+
+                if start_date:
+                    conditions.append("a.date >= %s")
+                    params.append(start_date)
+                if end_date:
+                    conditions.append("a.date <= %s")
+                    params.append(end_date)
+
+                if conditions:
+                    base_sql += " WHERE " + " AND ".join(conditions)
+
+                base_sql += " ORDER BY a.date DESC, a.check_in DESC"
+                cursor.execute(base_sql, tuple(params))
+            else:
+                if not emp_record:
+                    flash('No employee record found.', 'warning')
+                    return render_template('attendance_history.html', records=[])
+
+                base_sql = """
+                    SELECT a.*, u.name as employee_name, e.department 
+                    FROM attendance a
+                    JOIN employee e ON a.emp_id = e.emp_id
+                    JOIN users u ON e.user_id = u.user_id
+                    WHERE a.emp_id = %s
+                """
+                params = [emp_record['emp_id']]
+
+                if start_date:
+                    base_sql += " AND a.date >= %s"
+                    params.append(start_date)
+                if end_date:
+                    base_sql += " AND a.date <= %s"
+                    params.append(end_date)
+
+                base_sql += " ORDER BY a.date DESC, a.check_in DESC"
+                cursor.execute(base_sql, tuple(params))
+
+            records = cursor.fetchall()
+
+        conn.close()
+        return render_template('attendance_history.html', records=records, start_date=start_date, end_date=end_date)
+
+    except Exception as e:
+        flash(f'Database error: {str(e)}', 'danger')
+        return render_template('attendance_history.html', records=[], start_date=start_date, end_date=end_date)
+
+@hr_bp.route('/payroll')
+@manager_or_admin_required
+def payroll_dashboard():
     month = request.args.get('month', datetime.now().month, type=int)
     year = request.args.get('year', datetime.now().year, type=int)
 
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
-            # Fetch payroll records for selected month/year
             cursor.execute("""
                 SELECT p.*, u.name as employee_name, e.department
                 FROM payroll p
@@ -150,7 +214,6 @@ def payroll_dashboard():
             """, (month, year))
             payroll_records = cursor.fetchall()
             
-            # Fetch total disbursement
             cursor.execute("SELECT SUM(net_pay) as total FROM payroll WHERE month = %s AND year = %s", (month, year))
             total_disbursement = cursor.fetchone()['total'] or 0
 
@@ -167,28 +230,23 @@ def payroll_dashboard():
         return render_template('payroll.html', payroll=[], month=month, year=year, total_disbursement=0)
 
 @hr_bp.route('/payroll/generate', methods=['POST'])
+@manager_or_admin_required
 def generate_payroll():
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
-
-    month = int(request.form.get('month'))
-    year = int(request.form.get('year'))
+    month = int(request.form.get('month', datetime.now().month))
+    year = int(request.form.get('year', datetime.now().year))
 
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
-            # 1. Get all employees
             cursor.execute("SELECT emp_id, salary FROM employee")
             employees = cursor.fetchall()
 
             for emp in employees:
-                # 2. Check if payroll already exists
                 cursor.execute("SELECT payroll_id FROM payroll WHERE emp_id = %s AND month = %s AND year = %s", 
                               (emp['emp_id'], month, year))
                 if cursor.fetchone():
-                    continue # Skip if already generated
+                    continue
 
-                # 3. Simple calculation: Net = Basic (no deductions for now)
                 basic = emp['salary']
                 deductions = 0
                 net_pay = basic - deductions
@@ -200,10 +258,10 @@ def generate_payroll():
 
         conn.commit()
         conn.close()
+        log_audit(session['user_id'], f"Generated payroll for {month}/{year}")
         flash(f'Payroll generated for {month}/{year} successfully.', 'success')
 
     except Exception as e:
         flash(f'Error generating payroll: {str(e)}', 'danger')
 
     return redirect(url_for('hr.payroll_dashboard', month=month, year=year))
-

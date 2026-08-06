@@ -7,18 +7,61 @@ from werkzeug.security import generate_password_hash
 load_dotenv()
 
 def get_db_connection():
-    return pymysql.connect(
-        host=os.environ.get('DB_HOST', os.environ.get('MYSQLHOST', 'localhost')),
-        port=int(os.environ.get('DB_PORT', os.environ.get('MYSQLPORT', 3306))),
-        user=os.environ.get('DB_USER', os.environ.get('MYSQLUSER', 'root')),
-        password=os.environ.get('DB_PASSWORD', os.environ.get('MYSQLPASSWORD', '')),
-        database=os.environ.get('DB_NAME', os.environ.get('MYSQLDATABASE', 'erpsystem')),
-        cursorclass=pymysql.cursors.DictCursor
-    )
+    host = os.environ.get('DB_HOST', os.environ.get('MYSQLHOST', '127.0.0.1'))
+    port = int(os.environ.get('DB_PORT', os.environ.get('MYSQLPORT', 3306)))
+    user = os.environ.get('DB_USER', os.environ.get('MYSQLUSER', 'root'))
+    password = os.environ.get('DB_PASSWORD', os.environ.get('MYSQLPASSWORD', ''))
+    database = os.environ.get('DB_NAME', os.environ.get('MYSQLDATABASE', 'erpsystem'))
+    
+    try:
+        return pymysql.connect(
+            host=host,
+            port=port,
+            user=user,
+            password=password,
+            database=database,
+            cursorclass=pymysql.cursors.DictCursor,
+            connect_timeout=5
+        )
+    except Exception as primary_error:
+        fallback_host = 'localhost' if host == '127.0.0.1' else '127.0.0.1'
+        try:
+            return pymysql.connect(
+                host=fallback_host,
+                port=port,
+                user=user,
+                password=password,
+                database=database,
+                cursorclass=pymysql.cursors.DictCursor,
+                connect_timeout=5
+            )
+        except:
+            raise primary_error
 
 def init_db():
-    print("🚀 Initializing Database...")
+    print("🚀 Initializing Nexus ERP Database...")
+    
+    # Extract database name from env
+    db_name = os.environ.get('DB_NAME', os.environ.get('MYSQLDATABASE', 'erpsystem'))
+    
     try:
+        # 1. Connect without database first to ensure it exists
+        temp_conn = pymysql.connect(
+            host=os.environ.get('DB_HOST', os.environ.get('MYSQLHOST', 'localhost')),
+            port=int(os.environ.get('DB_PORT', os.environ.get('MYSQLPORT', 3306))),
+            user=os.environ.get('DB_USER', os.environ.get('MYSQLUSER', 'root')),
+            password=os.environ.get('DB_PASSWORD', os.environ.get('MYSQLPASSWORD', '')),
+            cursorclass=pymysql.cursors.DictCursor
+        )
+        with temp_conn.cursor() as cursor:
+            print(f"Checking for database '{db_name}'...")
+            safe_db_name = db_name.replace('`', '``')
+            cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{safe_db_name}`")
+        temp_conn.commit()
+        temp_conn.close()
+        print(f"✅ Database '{db_name}' verified.")
+
+        # 2. Now connect to the actual database
         conn = get_db_connection()
         with conn.cursor() as cursor:
             # 1. Roles Table
@@ -162,7 +205,7 @@ def init_db():
             # 12. Messages Table
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS messages (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    message_id INT AUTO_INCREMENT PRIMARY KEY,
                     sender_id INT,
                     receiver_id INT,
                     subject VARCHAR(255),
@@ -194,7 +237,8 @@ def init_db():
                     category VARCHAR(100),
                     amount DECIMAL(10, 2),
                     date DATE,
-                    description TEXT
+                    description TEXT,
+                    created_by INT
                 )
             """)
 
@@ -224,14 +268,14 @@ def init_db():
                 admin_pw = generate_password_hash('admin123')
                 cursor.execute(
                     "INSERT INTO users (name, email, password_hash, role_id) VALUES (%s, %s, %s, %s)",
-                    ('Administrator', 'admin@erp.com', admin_pw, 1)
+                    ('Administrator', 'admin@nexus-erp.in', admin_pw, 1)
                 )
 
         conn.commit()
         conn.close()
-        print("✅ Database initialized successfully!")
+        print("Database initialized successfully!")
     except Exception as e:
-        print(f"❌ Error during database initialization: {e}")
+        print(f"Error during database initialization: {e}")
 
 if __name__ == "__main__":
     init_db()

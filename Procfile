@@ -1,1 +1,1 @@
-web: python init_db.py && gunicorn main_app:app
+web: python init_db.py && gunicorn --bind 0.0.0.0:$PORT app:app

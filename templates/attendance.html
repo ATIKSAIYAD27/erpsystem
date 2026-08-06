@@ -314,8 +314,21 @@
             </a>
         </div>
         <div class="nav-item">
+            <a href="/mail" class="nav-link">
+                <i class="bi bi-envelope-at-fill"></i> Nexus Mail
+                {% if mail_count > 0 %}
+                <span class="badge rounded-pill bg-primary ms-auto" style="font-size: 10px;">{{ mail_count }}</span>
+                {% endif %}
+            </a>
+        </div>
+        <div class="nav-item">
             <a href="/finance" class="nav-link">
                 <i class="bi bi-wallet2"></i> Finance Hub
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="/expense-reports" class="nav-link">
+                <i class="bi bi-file-earmark-bar-graph"></i> Expense Reports
             </a>
         </div>
         <div class="nav-item">
@@ -329,10 +342,27 @@
             </a>
         </div>
         <div class="nav-item">
+            <a href="/customers" class="nav-link">
+                <i class="bi bi-person-lines-fill"></i> Customers
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="/suppliers" class="nav-link">
+                <i class="bi bi-truck"></i> Suppliers
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="/purchase-orders" class="nav-link">
+                <i class="bi bi-cart-check"></i> Purchase Orders
+            </a>
+        </div>
+        <div class="nav-item">
             <a href="/projects" class="nav-link">
                 <i class="bi bi-kanban"></i> Projects
             </a>
         </div>
+        {% if session.get('role_name') == 'Admin' %}<div class="nav-item"><a href="/company-settings" class="nav-link"><i class="bi bi-building-gear"></i> Company Settings</a></div>{% endif %}
+        {% if session.get('role_name') == 'Admin' %}<div class="nav-item"><a href="/audit-log" class="nav-link"><i class="bi bi-journal-text"></i> Audit Log</a></div>{% endif %}
         <div class="nav-item">
             <a href="/notifications" class="nav-link">
                 <i class="bi bi-bell"></i> Alerts
@@ -450,8 +480,10 @@
                                     <td class="small">{{ req.start_date }} - {{ req.end_date }}</td>
                                     <td class="text-end">
                                         <div class="btn-group">
-                                            <button class="btn btn-sm btn-outline-success"><i class="bi bi-check-lg"></i></button>
-                                            <button class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg"></i></button>
+                                            <a href="{{ url_for('leave.leave_action', leave_id=req.leave_id, status='Approved') }}" 
+                                               class="btn btn-sm btn-outline-success"><i class="bi bi-check-lg"></i></a>
+                                            <a href="{{ url_for('leave.leave_action', leave_id=req.leave_id, status='Rejected') }}" 
+                                               class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg"></i></a>
                                         </div>
                                     </td>
                                 </tr>
@@ -467,6 +499,13 @@
                     {% endif %}
                 </div>
             </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="mb-4 animate-up" style="animation-delay: 0.25s;">
+            <a href="/attendance/history" class="btn btn-premium" style="display: inline-flex; align-items: center; gap: 10px; padding: 12px 24px; border-radius: 14px; font-weight: 700; text-decoration: none;">
+                <i class="bi bi-clock-history"></i> View Attendance History
+            </a>
         </div>
 
         <!-- Today's Log -->
@@ -539,6 +578,6 @@
         setInterval(updateTime, 1000);
         updateTime();
     </script>
-    {% include 'ai_widget.html' %}
+    
 </body>
 </html>

@@ -272,9 +272,15 @@
         <a href="/mail" class="nav-link"><i class="bi bi-envelope-at-fill"></i> Nexus Mail {% if mail_count > 0 %}<span class="badge rounded-pill bg-primary ms-auto" style="font-size: 10px;">{{ mail_count }}</span>{% endif %}</a>
         <a href="/payroll" class="nav-link"><i class="bi bi-cash-stack"></i> Payroll</a>
         <a href="/finance" class="nav-link"><i class="bi bi-wallet2"></i> Finance Hub</a>
+        <a href="/expense-reports" class="nav-link"><i class="bi bi-file-earmark-bar-graph"></i> Expense Reports</a>
         <a href="/inventory" class="nav-link active"><i class="bi bi-box-seam-fill"></i> Inventory</a>
         <a href="/sales" class="nav-link"><i class="bi bi-graph-up-arrow"></i> Sales & CRM</a>
+        <a href="/customers" class="nav-link"><i class="bi bi-person-lines-fill"></i> Customers</a>
+        <a href="/suppliers" class="nav-link"><i class="bi bi-truck"></i> Suppliers</a>
+        <a href="/purchase-orders" class="nav-link"><i class="bi bi-cart-check"></i> Purchase Orders</a>
         <a href="/projects" class="nav-link"><i class="bi bi-kanban"></i> Projects</a>
+        {% if session.get('role_name') == 'Admin' %}<a href="/company-settings" class="nav-link"><i class="bi bi-building-gear"></i> Company Settings</a>{% endif %}
+        {% if session.get('role_name') == 'Admin' %}<a href="/audit-log" class="nav-link"><i class="bi bi-journal-text"></i> Audit Log</a>{% endif %}
         <a href="/notifications" class="nav-link">
             <i class="bi bi-bell"></i> Alerts
             {% if notif_count > 0 %}
@@ -336,7 +342,7 @@
                     </div>
                     <div>
                         <div class="text-secondary small">Inventory Value</div>
-                        <div class="text-success fw-bold fs-4">${{ "{:,.2f}".format(total_value) }}</div>
+                        <div class="text-success fw-bold fs-4">{{ total_value|indian_currency }}</div>
                     </div>
                 </div>
             </div>
@@ -381,11 +387,11 @@
                                          style="width: {{ [width_pct, 100]|min }}%; transition: 0.5s;"></div>
                                 </div>
                             </td>
-                            <td><div class="text-white fw-bold fs-6">${{ "{:,.2f}".format(p.unit_price) }}</div></td>
+                            <td><div class="text-white fw-bold fs-6">{{ p.unit_price|indian_currency }}</div></td>
                             <td class="text-end">
                                 <div class="btn-group">
                                     <button class="btn btn-sm btn-outline-info border-0" 
-                                            onclick="openEditModal('{{ p.product_id }}', '{{ p.name }}', '{{ p.sku }}', '{{ p.quantity }}', '{{ p.reorder_level }}', '{{ p.unit_price }}')"
+                                            onclick='openEditModal("{{ p.product_id }}", "{{ p.name|e }}", "{{ p.sku|e }}", "{{ p.quantity }}", "{{ p.reorder_level }}", "{{ p.unit_price }}")'
                                             title="Edit">
                                         <i class="bi bi-pencil-square"></i>
                                     </button>
@@ -444,7 +450,7 @@
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label text-secondary">Unit Price ($)</label>
+                            <label class="form-label text-secondary">Unit Price (Rs.)</label>
                             <input type="number" step="0.01" class="form-control bg-transparent text-white border-secondary" name="unit_price" required>
                         </div>
                     </div>
@@ -485,7 +491,7 @@
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label text-secondary">Unit Price ($)</label>
+                            <label class="form-label text-secondary">Unit Price (Rs.)</label>
                             <input type="number" step="0.01" class="form-control bg-transparent text-white border-secondary" name="unit_price" id="edit_unit_price" required>
                         </div>
                     </div>
@@ -511,6 +517,6 @@
             myModal.show();
         }
     </script>
-    {% include 'ai_widget.html' %}
+    
 </body>
 </html>
