@@ -1,0 +1,41 @@
+services:
+  - type: web
+    name: nexus-erp
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: bash deploy.sh
+    healthCheckPath: /health
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: FLASK_DEBUG
+        value: "0"
+      - key: PYTHON_VERSION
+        value: "3.10.8"
+      - key: DB_HOST
+        fromDatabase:
+          name: nexus-erp-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: nexus-erp-db
+          property: port
+      - key: DB_USER
+        fromDatabase:
+          name: nexus-erp-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: nexus-erp-db
+          property: password
+      - key: DB_NAME
+        fromDatabase:
+          name: nexus-erp-db
+          property: database
+
+databases:
+  - name: nexus-erp-db
+    plan: free
+    databaseName: erpsystem
+    user: nexusadmin

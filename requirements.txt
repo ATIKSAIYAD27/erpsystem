@@ -21,3 +21,5 @@ python-engineio>=4.8
 python-socketio>=5.10
 python-barcode>=0.15
 Flask-Compress>=1.14
+gevent>=24.2.1
+gevent-websocket>=0.10.1

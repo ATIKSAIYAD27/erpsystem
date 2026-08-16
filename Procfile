@@ -1,1 +1,1 @@
-web: python init_db.py && python migrate_performance.py && gunicorn --config gunicorn_config.py app:app
+web: bash deploy.sh
