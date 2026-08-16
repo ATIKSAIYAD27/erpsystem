@@ -1,46 +1,31 @@
 <!-- Global Search Component -->
-<div class="search-container position-relative" style="width: 350px;">
-    <div class="input-group">
-        <span class="input-group-text bg-transparent border-secondary text-secondary" style="border-right: none; border-radius: 12px 0 0 12px; backdrop-filter: blur(10px);">
+<div class="search-container position-relative">
+    <div class="input-group search-input-group">
+        <span class="input-group-text bg-transparent border-secondary text-secondary">
             <i class="bi bi-search"></i>
         </span>
         <input type="text" id="globalSearchInput" class="form-control bg-transparent border-secondary text-white" 
-               placeholder="Search anything... (Ctrl+K)" 
-               style="border-left: none; border-radius: 0 12px 12px 0; backdrop-filter: blur(10px); outline: none; box-shadow: none;">
+               placeholder="Search anything... (Ctrl+K)">
     </div>
     
     <!-- Search Results Dropdown -->
-    <div id="globalSearchResults" class="dropdown-menu w-100 mt-2 p-0 shadow-lg border-0" 
-         style="display: none; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1) !important; border-radius: 16px; overflow: hidden; z-index: 2000;">
-        <div id="searchResultsList" style="max-height: 400px; overflow-y: auto;">
+    <div id="globalSearchResults" class="dropdown-menu w-100 mt-2 p-0 shadow-lg border-0 search-dropdown">
+        <div id="searchResultsList" class="search-dropdown-content">
             <!-- Results will be injected here -->
         </div>
     </div>
 </div>
 
 <style>
-    .search-result-item {
-        padding: 12px 20px;
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        color: #cbd5e1;
-        text-decoration: none;
-        transition: 0.2s;
-        border-bottom: 1px solid rgba(255,255,255,0.05);
-    }
-    .search-result-item:hover {
-        background: rgba(255, 255, 255, 0.05);
-        color: white;
-    }
     .search-result-item i {
-        font-size: 18px;
-        width: 30px;
-        height: 30px;
+        font-size: 16px;
+        width: 32px;
+        height: 32px;
         display: flex;
         align-items: center;
         justify-content: center;
         border-radius: 8px;
+        flex-shrink: 0;
     }
     .res-employee { color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
     .res-product { color: #10b981; background: rgba(16, 185, 129, 0.1); }
@@ -55,14 +40,16 @@
 
         if (!input) return;
 
-        // Robust Ctrl+K to focus
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
         window.addEventListener('keydown', (e) => {
             if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'k')) {
                 e.preventDefault();
                 input.focus();
-                // Optional: clear input on new search
-                // input.value = '';
-                // results.style.display = 'none';
             }
         });
 
@@ -78,15 +65,22 @@
                 const data = await response.json();
 
                 if (data && data.length > 0) {
-                    list.innerHTML = data.map(item => `
-                        <a href="/${item.type == 'employee' ? 'employee' : item.type == 'product' ? 'inventory' : 'projects'}?q=${encodeURIComponent(item.title)}" class="search-result-item">
-                            <i class="bi ${item.type == 'employee' ? 'bi-person res-employee' : item.type == 'product' ? 'bi-box res-product' : 'bi-check2-circle res-task'}"></i>
-                            <div>
-                                <div style="font-weight: 600; font-size: 14px;">${item.title}</div>
-                                <div style="font-size: 11px; opacity: 0.6;">${item.type.toUpperCase()} • ${item.subtitle}</div>
-                            </div>
-                        </a>
-                    `).join('');
+                    list.innerHTML = data.map(item => {
+                        const safeTitle = escapeHtml(item.title);
+                        const safeSubtitle = escapeHtml(item.subtitle || '');
+                        const safeType = escapeHtml(item.type);
+                        const iconClass = item.type === 'employee' ? 'bi-person res-employee' : item.type === 'product' ? 'bi-box res-product' : 'bi-check2-circle res-task';
+                        const href = item.type === 'employee' ? 'employee' : item.type === 'product' ? 'inventory' : 'projects';
+                        return `
+                            <a href="/${href}?q=${encodeURIComponent(item.title)}" class="search-result-item">
+                                <i class="bi ${iconClass}"></i>
+                                <div>
+                                    <div style="font-weight: 600; font-size: 14px;">${safeTitle}</div>
+                                    <div style="font-size: 11px; opacity: 0.6;">${safeType.toUpperCase()} • ${safeSubtitle}</div>
+                                </div>
+                            </a>
+                        `;
+                    }).join('');
                     results.style.display = 'block';
                 } else {
                     list.innerHTML = '<div class="p-4 text-center text-secondary small">No results found</div>';
@@ -97,7 +91,6 @@
             }
         });
 
-        // Close on click outside
         document.addEventListener('click', (e) => {
             if (!input.contains(e.target) && !results.contains(e.target)) {
                 results.style.display = 'none';

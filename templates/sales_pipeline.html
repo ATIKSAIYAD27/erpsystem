@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+
+{% block title %}Sales Pipeline - Nexus ERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .btn-add {
+        background: linear-gradient(135deg, var(--accent-blue), #2563eb);
+        border: none;
+        border-radius: 12px;
+        font-weight: 700;
+        box-shadow: 0 10px 20px rgba(59, 130, 246, 0.2);
+    }
+    .pipeline-container {
+        display: flex;
+        gap: 16px;
+        overflow-x: auto;
+        padding-bottom: 16px;
+        min-height: 500px;
+    }
+    .pipeline-container::-webkit-scrollbar { height: 6px; }
+    .pipeline-container::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 10px; }
+    .pipeline-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+    .pipeline-column {
+        min-width: 280px;
+        max-width: 300px;
+        flex: 1;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--card-border);
+        border-radius: 20px;
+        padding: 16px;
+    }
+    .pipeline-column-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--card-border);
+    }
+    .pipeline-column-title {
+        font-weight: 800;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .pipeline-column-count {
+        background: rgba(255,255,255,0.06);
+        border-radius: 8px;
+        padding: 4px 10px;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text-secondary);
+    }
+    .deal-card {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 14px;
+        padding: 16px;
+        margin-bottom: 10px;
+        transition: all 0.3s;
+        cursor: pointer;
+    }
+    .deal-card:hover {
+        border-color: var(--accent-blue);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    }
+    .deal-value {
+        font-size: 18px;
+        font-weight: 800;
+        color: white;
+    }
+    .deal-customer {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-top: 4px;
+    }
+    .deal-owner {
+        font-size: 11px;
+        color: var(--text-secondary);
+        margin-top: 8px;
+    }
+    .deal-owner .avatar-sm {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        font-weight: 800;
+        color: white;
+        margin-right: 6px;
+    }
+    .col-lead { border-top: 3px solid var(--accent-blue); }
+    .col-qualified { border-top: 3px solid var(--accent-purple); }
+    .col-proposal { border-top: 3px solid var(--accent-orange); }
+    .col-negotiation { border-top: 3px solid #f59e0b; }
+    .col-won { border-top: 3px solid var(--accent-green); }
+    .col-lost { border-top: 3px solid var(--accent-red); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="header-section animate-up">
+    <div>
+        <h1 class="page-title">Sales Pipeline</h1>
+        <div class="text-secondary">Track deals through every stage of your sales process.</div>
+    </div>
+    <button class="btn btn-add text-white" data-bs-toggle="modal" data-bs-target="#addDealModal">
+        <i class="bi bi-plus-lg me-2"></i>Add Deal
+    </button>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }} rounded-4 border-0 mb-4 animate-up">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<!-- Stats Row -->
+<div class="row g-4 mb-5">
+    <div class="col-xl-3 col-lg-6">
+        <div class="stat-card animate-up delay-1">
+            <div class="card-icon-wrapper blue-glow">
+                <i class="bi bi-funnel-fill"></i>
+            </div>
+            <h2 class="stat-value">{{ pipeline_value|indian_currency }}</h2>
+            <div class="stat-label">Pipeline Value</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-lg-6">
+        <div class="stat-card animate-up delay-2">
+            <div class="card-icon-wrapper green-glow">
+                <i class="bi bi-trophy-fill"></i>
+            </div>
+            <h2 class="stat-value">{{ won_value|indian_currency }}</h2>
+            <div class="stat-label">Won Value</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-lg-6">
+        <div class="stat-card animate-up delay-3">
+            <div class="card-icon-wrapper orange-glow">
+                <i class="bi bi-kanban"></i>
+            </div>
+            <h2 class="stat-value">{{ active_deals }}</h2>
+            <div class="stat-label">Active Deals</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-lg-6">
+        <div class="stat-card animate-up delay-4">
+            <div class="card-icon-wrapper purple-glow">
+                <i class="bi bi-graph-up-arrow"></i>
+            </div>
+            <h2 class="stat-value">{{ win_rate }}%</h2>
+            <div class="stat-label">Win Rate</div>
+        </div>
+    </div>
+</div>
+
+<!-- Kanban Pipeline -->
+<div class="glass-card animate-up delay-3">
+    <div class="pipeline-container">
+        {% set stages = ['Lead', 'Qualified', 'Proposal', 'Negotiation', 'Closed Won', 'Closed Lost'] %}
+        {% for stage in stages %}
+        {% set stage_deals = deals|selectattr('stage', 'equalto', stage)|list %}
+        {% set col_class = 'col-' ~ stage|lower|replace(' ', '-') %}
+        <div class="pipeline-column {{ col_class }}">
+            <div class="pipeline-column-header">
+                <span class="pipeline-column-title">{{ stage }}</span>
+                <span class="pipeline-column-count">{{ stage_deals|length }}</span>
+            </div>
+            {% for deal in stage_deals %}
+            <div class="deal-card">
+                <div class="deal-value">{{ deal.value|indian_currency }}</div>
+                <div class="deal-customer">{{ deal.customer_name }}</div>
+                <div class="deal-owner">
+                    <span class="avatar-sm">{{ deal.owner[0] }}</span>
+                    {{ deal.owner }}
+                </div>
+            </div>
+            {% endfor %}
+            {% if not stage_deals %}
+            <div class="text-center py-4 text-secondary small opacity-50">No deals</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Add Deal Modal -->
+<div class="modal fade" id="addDealModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark border-secondary rounded-4">
+            <form action="/sales/pipeline/add" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title text-white fw-bold">Add New Deal</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small">Deal Name</label>
+                        <input type="text" name="title" class="form-control" placeholder="e.g. Enterprise License Sale" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small">Value</label>
+                        <input type="number" name="value" class="form-control" placeholder="e.g. 250000" min="0" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small">Customer</label>
+                        <select name="customer_id" class="form-select" required>
+                            <option value="">Select customer...</option>
+                            {% for c in customers %}
+                            <option value="{{ c.customer_id }}">{{ c.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small">Stage</label>
+                        <select name="stage" class="form-select" required>
+                            <option value="Lead">Lead</option>
+                            <option value="Qualified">Qualified</option>
+                            <option value="Proposal">Proposal</option>
+                            <option value="Negotiation">Negotiation</option>
+                            <option value="Closed Won">Closed Won</option>
+                            <option value="Closed Lost">Closed Lost</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small">Owner</label>
+                        <select name="owner" class="form-select">
+                            {% for emp in employees %}
+                            <option value="{{ emp.name }}">{{ emp.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small">Notes</label>
+                        <textarea name="notes" class="form-control" rows="2" placeholder="Deal notes..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="submit" class="btn btn-add text-white w-100">Create Deal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

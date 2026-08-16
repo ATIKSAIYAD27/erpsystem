@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Two-Factor Authentication - Nexus ERP</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #05070a;
+            --card-bg: rgba(15, 23, 42, 0.6);
+            --card-border: rgba(255, 255, 255, 0.04);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+        }
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            background-image:
+                radial-gradient(circle at 80% 30%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 20% 70%, rgba(139, 92, 246, 0.15) 0%, transparent 50%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .auth-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 40px;
+            backdrop-filter: blur(20px);
+            width: 100%;
+            max-width: 520px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: fadeSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .brand-icon {
+            width: 60px; height: 60px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border-radius: 16px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 30px; color: white;
+            box-shadow: 0 0 30px rgba(59, 130, 246, 0.4);
+            margin: 0 auto 20px;
+        }
+        .auth-title {
+            text-align: center; font-size: 28px; font-weight: 800;
+            margin-bottom: 5px;
+            background: linear-gradient(to right, #fff, #94a3b8);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .auth-subtitle {
+            text-align: center; color: var(--text-secondary);
+            font-size: 15px; margin-bottom: 30px;
+        }
+        .form-control {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white; padding: 14px 18px; border-radius: 12px;
+            font-size: 15px; transition: all 0.3s;
+        }
+        .form-control:focus {
+            background: rgba(15, 23, 42, 0.8);
+            border-color: var(--accent-blue); color: white;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+        }
+        .form-label { color: var(--text-secondary); font-weight: 500; font-size: 14px; margin-bottom: 8px; }
+        .btn-glow {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border: none; color: white; padding: 14px;
+            border-radius: 12px; font-weight: 600; font-size: 16px;
+            width: 100%; margin-top: 10px;
+            box-shadow: 0 5px 20px rgba(59, 130, 246, 0.4); transition: 0.3s;
+        }
+        .btn-glow:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.6); color: white;
+        }
+        .qr-container {
+            background: white; border-radius: 16px; padding: 16px;
+            display: inline-block; margin: 16px auto;
+        }
+        .secret-box {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px dashed var(--accent-blue);
+            border-radius: 12px; padding: 14px; text-align: center;
+            font-family: monospace; font-size: 18px; letter-spacing: 3px;
+            color: var(--accent-blue); word-break: break-all;
+        }
+        .step-badge {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: rgba(59, 130, 246, 0.1); color: var(--accent-blue);
+            display: inline-flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 14px; margin-right: 10px;
+        }
+        .status-enabled {
+            background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3);
+            color: var(--accent-green); border-radius: 12px; padding: 16px;
+            text-align: center; margin-bottom: 20px;
+        }
+        .status-disabled {
+            background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3);
+            color: var(--accent-orange); border-radius: 12px; padding: 16px;
+            text-align: center; margin-bottom: 20px;
+        }
+        .auth-footer { text-align: center; margin-top: 25px; color: var(--text-secondary); font-size: 14px; }
+        .auth-footer a { color: var(--accent-blue); text-decoration: none; font-weight: 600; }
+        .auth-footer a:hover { text-decoration: underline; }
+        @keyframes fadeSlideUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-card">
+        <div class="brand-icon">
+            <i class="bi bi-shield-lock-fill"></i>
+        </div>
+        <h1 class="auth-title">Two-Factor Authentication</h1>
+        <p class="auth-subtitle">Secure your Nexus ERP account with TOTP</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} bg-dark text-white border-{{ category }}" role="alert" style="border-radius: 12px;">
+                <i class="bi bi-info-circle-fill me-2 text-{{ category }}"></i> {{ message }}
+            </div>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        {% if enabled %}
+            <div class="status-enabled">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <strong>2FA is Active</strong><br>
+                <small>Your account is protected with two-factor authentication.</small>
+            </div>
+
+            <div class="mb-3">
+                <div class="secret-box">{{ secret }}</div>
+            </div>
+
+            <hr style="border-color: var(--card-border);">
+            <h6 class="text-white fw-bold mb-3"><i class="bi bi-x-circle me-2 text-danger"></i>Disable 2FA</h6>
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="action" value="disable">
+                <div class="mb-3">
+                    <label class="form-label">Confirm Password</label>
+                    <input type="password" class="form-control" name="password" placeholder="Enter your password" required>
+                </div>
+                <button type="submit" class="btn btn-danger" style="width: 100%; border-radius: 12px; padding: 12px; font-weight: 600;">
+                    <i class="bi bi-shield-x me-2"></i>Disable Two-Factor Authentication
+                </button>
+            </form>
+
+        {% else %}
+            <div class="status-disabled">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <strong>2FA is Not Active</strong><br>
+                <small>Add an extra layer of security to your account.</small>
+            </div>
+
+            {% if pending %}
+            <div class="mb-3">
+                <p class="text-secondary small mb-2"><span class="step-badge">1</span>Scan this QR code with your authenticator app</p>
+                <div class="text-center">
+                    <div class="qr-container">
+                        <img src="data:image/png;base64,{{ qr_code }}" alt="QR Code" style="width: 200px; height: 200px;">
+                    </div>
+                </div>
+                <p class="text-secondary small mb-2 mt-3"><span class="step-badge">2</span>Or enter this secret manually:</p>
+                <div class="secret-box">{{ secret }}</div>
+            </div>
+
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="action" value="enable">
+                <input type="hidden" name="secret" value="{{ secret }}">
+                <div class="mb-3">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-control" name="password" placeholder="Confirm your password" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Verification Code</label>
+                    <input type="text" class="form-control" name="totp_code" placeholder="Enter 6-digit code from your app"
+                           maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code" required
+                           style="text-align: center; font-size: 24px; letter-spacing: 8px;">
+                </div>
+                <button type="submit" class="btn btn-glow">
+                    <i class="bi bi-shield-check me-2"></i>Enable Two-Factor Authentication
+                </button>
+            </form>
+            {% else %}
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="action" value="enable">
+                <input type="hidden" name="secret" value="{{ secret }}">
+                <input type="hidden" name="totp_code" value="">
+                <input type="hidden" name="password" value="">
+                <button type="submit" class="btn btn-glow">
+                    <i class="bi bi-shield-plus me-2"></i>Generate QR Code & Start Setup
+                </button>
+            </form>
+            {% endif %}
+        {% endif %}
+
+        <div class="auth-footer">
+            <a href="/settings"><i class="bi bi-arrow-left me-1"></i> Back to Settings</a>
+        </div>
+    </div>
+</body>
+</html>

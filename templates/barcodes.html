@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}Barcode Generator - Nexus ERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .barcode-preview {
+        background: white;
+        border-radius: 16px;
+        padding: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 250px;
+    }
+    .barcode-preview canvas {
+        max-width: 100%;
+        height: auto;
+    }
+    .btn-generate {
+        background: linear-gradient(135deg, var(--accent-blue), #2563eb);
+        border: none;
+        border-radius: 12px;
+        font-weight: 700;
+        box-shadow: 0 10px 20px rgba(59, 130, 246, 0.2);
+    }
+    .btn-download {
+        background: linear-gradient(135deg, var(--accent-green), #059669);
+        border: none;
+        border-radius: 12px;
+        font-weight: 700;
+        box-shadow: 0 10px 20px rgba(16, 185, 129, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="header-section animate-up">
+    <div>
+        <h1 class="page-title">Barcode Generator</h1>
+        <div class="text-secondary">Generate barcodes and QR codes for products.</div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-4 animate-up delay-1">
+        <div class="glass-card h-100">
+            <h5 class="fw-bold mb-4">Barcode Settings</h5>
+            <form id="barcodeForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">Select Product</label>
+                    <select name="product_id" id="productSelect" class="form-select" required>
+                        <option value="">Choose a product...</option>
+                        {% for p in products %}
+                        <option value="{{ p.product_id }}" data-name="{{ p.name }}" data-sku="{{ p.sku }}">{{ p.name }} ({{ p.sku }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">Barcode Type</label>
+                    <select name="barcode_type" id="barcodeType" class="form-select">
+                        <option value="code128">Code 128</option>
+                        <option value="ean13">EAN-13</option>
+                        <option value="qr">QR Code</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">Custom Value (optional)</label>
+                    <input type="text" name="custom_value" id="customValue" class="form-control" placeholder="Override barcode value">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">Label Size</label>
+                    <select name="label_size" id="labelSize" class="form-select">
+                        <option value="small">Small (50x30mm)</option>
+                        <option value="medium" selected>Medium (70x50mm)</option>
+                        <option value="large">Large (100x70mm)</option>
+                    </select>
+                </div>
+                <button type="button" class="btn btn-generate text-white w-100 mb-3" onclick="generateBarcode()">
+                    <i class="bi bi-upc-scan me-2"></i>Generate Barcode
+                </button>
+                <button type="button" class="btn btn-download text-white w-100" onclick="downloadLabel()">
+                    <i class="bi bi-file-earmark-pdf me-2"></i>Download Label PDF
+                </button>
+            </form>
+        </div>
+    </div>
+    <div class="col-lg-8 animate-up delay-2">
+        <div class="glass-card h-100">
+            <h5 class="fw-bold mb-4">Barcode Preview</h5>
+            <div class="barcode-preview" id="barcodePreview">
+                <div class="text-center" id="barcodePlaceholder">
+                    <i class="bi bi-upc-scan display-1 text-secondary mb-3"></i>
+                    <p class="text-secondary">Select a product and click Generate to preview</p>
+                </div>
+                <div id="barcodeResult" style="display: none; text-align: center;">
+                    <div id="barcodeCanvas"></div>
+                    <p id="barcodeValue" class="text-dark fw-bold mt-3 mb-0"></p>
+                    <p id="barcodeProductName" class="text-secondary small"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script>
+function generateBarcode() {
+    const productSelect = document.getElementById('productSelect');
+    const barcodeType = document.getElementById('barcodeType').value;
+    const customValue = document.getElementById('customValue').value;
+    const placeholder = document.getElementById('barcodePlaceholder');
+    const result = document.getElementById('barcodeResult');
+
+    if (!productSelect.value && !customValue) {
+        alert('Please select a product or enter a custom value.');
+        return;
+    }
+
+    const value = customValue || productSelect.value;
+    const productName = productSelect.selectedOptions[0]?.textContent || 'Custom Value';
+
+    placeholder.style.display = 'none';
+    result.style.display = 'block';
+
+    const container = document.getElementById('barcodeCanvas');
+    container.innerHTML = '';
+
+    if (barcodeType === 'qr') {
+        const canvas = document.createElement('canvas');
+        container.appendChild(canvas);
+        QRCode.toCanvas(canvas, value, {
+            width: 200,
+            margin: 2,
+            color: { dark: '#000000', light: '#ffffff' }
+        });
+    } else {
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        container.appendChild(svg);
+        let format = barcodeType === 'ean13' ? 'EAN13' : 'CODE128';
+        try {
+            JsBarcode(svg, value, {
+                format: format,
+                width: 2,
+                height: 80,
+                displayValue: true,
+                fontSize: 16,
+                margin: 10
+            });
+        } catch (e) {
+            alert('Error generating barcode: ' + e.message);
+            placeholder.style.display = 'block';
+            result.style.display = 'none';
+            return;
+        }
+    }
+
+    document.getElementById('barcodeValue').textContent = value;
+    document.getElementById('barcodeProductName').textContent = productName;
+}
+
+function downloadLabel() {
+    const result = document.getElementById('barcodeResult');
+    if (result.style.display === 'none') {
+        alert('Generate a barcode first.');
+        return;
+    }
+    window.print();
+}
+</script>
+{% endblock %}

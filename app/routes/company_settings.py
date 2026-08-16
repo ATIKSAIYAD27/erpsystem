@@ -1,15 +1,16 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from app.db import get_db_connection
 from app.utils import admin_required
+import logging
 
 settings_bp = Blueprint('settings', __name__)
+
+logger = logging.getLogger(__name__)
+
 
 @settings_bp.route('/company-settings')
 @admin_required
 def company_settings():
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
-
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
@@ -29,15 +30,14 @@ def company_settings():
 
         return render_template('company_settings.html', settings=settings)
     except Exception as e:
-        flash(f'Error loading company settings: {str(e)}', 'danger')
+        logger.error("Company settings error: %s", e)
+        flash('An unexpected error occurred.', 'danger')
         return redirect(url_for('dashboard.dashboard'))
+
 
 @settings_bp.route('/company-settings/update', methods=['POST'])
 @admin_required
 def update_company_settings():
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
-
     company_name = request.form.get('company_name')
     address = request.form.get('address')
     phone = request.form.get('phone')
@@ -49,14 +49,21 @@ def update_company_settings():
         conn = get_db_connection()
         with conn.cursor() as cursor:
             cursor.execute("""
-                UPDATE company_settings
-                SET company_name=%s, address=%s, phone=%s, email=%s, tax_rate=%s, currency=%s
-                WHERE id = 1
+                INSERT INTO company_settings (id, company_name, address, phone, email, tax_rate, currency)
+                VALUES (1, %s, %s, %s, %s, %s, %s)
+                ON DUPLICATE KEY UPDATE
+                    company_name=VALUES(company_name),
+                    address=VALUES(address),
+                    phone=VALUES(phone),
+                    email=VALUES(email),
+                    tax_rate=VALUES(tax_rate),
+                    currency=VALUES(currency)
             """, (company_name, address, phone, email, tax_rate, currency))
         conn.commit()
         conn.close()
         flash('Company settings updated successfully.', 'success')
     except Exception as e:
-        flash(f'Error updating company settings: {str(e)}', 'danger')
+        logger.error("Update company settings error: %s", e)
+        flash('An unexpected error occurred.', 'danger')
 
     return redirect(url_for('settings.company_settings'))

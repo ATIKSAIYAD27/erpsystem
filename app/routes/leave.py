@@ -1,9 +1,12 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
-import pymysql
 from app.db import get_db_connection
 from app.utils import login_required, admin_required, log_audit
+import logging
 
 leave_bp = Blueprint('leave', __name__)
+
+logger = logging.getLogger(__name__)
+
 
 @leave_bp.route('/leaves')
 @login_required
@@ -16,14 +19,14 @@ def index():
             emp = cursor.fetchone()
 
             cursor.execute("""
-                SELECT l.*, u.name as emp_name, e.job_title 
+                SELECT l.*, u.name as emp_name, e.job_title
                 FROM leaves l
                 JOIN employee e ON l.emp_id = e.emp_id
                 JOIN users u ON e.user_id = u.user_id
                 ORDER BY l.created_at DESC
             """)
             all_leaves = cursor.fetchall()
-            
+
             my_leaves = []
             if emp:
                 cursor.execute("SELECT * FROM leaves WHERE emp_id = %s ORDER BY created_at DESC", (emp['emp_id'],))
@@ -33,12 +36,14 @@ def index():
             if emp:
                 cursor.execute("SELECT * FROM leave_balance WHERE emp_id = %s", (emp['emp_id'],))
                 leave_balances = cursor.fetchall()
-                
+
         conn.close()
         return render_template('leave.html', all_leaves=all_leaves, my_leaves=my_leaves, is_employee=bool(emp), leave_balances=leave_balances)
     except Exception as e:
-        flash(f'Error: {str(e)}', 'danger')
+        logger.error("Leave index error: %s", e)
+        flash('An unexpected error occurred.', 'danger')
         return redirect(url_for('dashboard.dashboard'))
+
 
 @leave_bp.route('/leave/apply', methods=['POST'])
 @login_required
@@ -48,7 +53,7 @@ def apply_leave():
     start_date = request.form.get('start_date')
     end_date = request.form.get('end_date')
     reason = request.form.get('reason')
-    
+
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
@@ -68,26 +73,31 @@ def apply_leave():
                 return redirect(url_for('leave.index'))
 
             cursor.execute("""
-                SELECT balance_id, total_days, used_days 
-                FROM leave_balance 
+                SELECT id, total_days, used_days
+                FROM leave_balance
                 WHERE emp_id = %s AND leave_type = %s
             """, (emp['emp_id'], leave_type))
             balance = cursor.fetchone()
 
             if not balance:
-                flash(f'No leave balance found for {leave_type}. Contact HR.', 'danger')
-                return redirect(url_for('leave.index'))
+                import datetime
+                current_year = datetime.datetime.now().year
+                cursor.execute("""
+                    INSERT INTO leave_balance (emp_id, leave_type, total_days, used_days, year)
+                    VALUES (%s, %s, 12, 0, %s)
+                """, (emp['emp_id'], leave_type, current_year))
+                balance = {'total_days': 12, 'used_days': 0}
 
             remaining = balance['total_days'] - balance['used_days']
             if days_requested > remaining:
                 flash(f'Insufficient {leave_type} leave balance. Remaining: {remaining} days, Requested: {days_requested} days.', 'danger')
                 return redirect(url_for('leave.index'))
-                
+
             cursor.execute("""
                 INSERT INTO leaves (emp_id, leave_type, start_date, end_date, reason)
                 VALUES (%s, %s, %s, %s, %s)
             """, (emp['emp_id'], leave_type, start_date, end_date, reason))
-            
+
             from app.utils import notify_admin
             notify_admin(f"New leave request from employee ID {emp['emp_id']} ({leave_type})", 'warning')
 
@@ -96,11 +106,13 @@ def apply_leave():
         log_audit(user_id, f"Applied for {leave_type} leave: {start_date} to {end_date}")
         flash('Leave request submitted successfully!', 'success')
     except Exception as e:
-        flash(f'Submission failed: {str(e)}', 'danger')
-        
+        logger.error("Apply leave error: %s", e)
+        flash('An unexpected error occurred.', 'danger')
+
     return redirect(url_for('leave.index'))
 
-@leave_bp.route('/leave/action/<int:leave_id>/<string:status>')
+
+@leave_bp.route('/leave/action/<int:leave_id>/<string:status>', methods=['POST'])
 @admin_required
 def leave_action(leave_id, status):
     try:
@@ -108,8 +120,8 @@ def leave_action(leave_id, status):
         with conn.cursor() as cursor:
             cursor.execute("""
                 SELECT e.user_id, l.leave_type, l.start_date, l.end_date
-                FROM leaves l 
-                JOIN employee e ON l.emp_id = e.emp_id 
+                FROM leaves l
+                JOIN employee e ON l.emp_id = e.emp_id
                 WHERE l.leave_id = %s
             """, (leave_id,))
             leave_info = cursor.fetchone()
@@ -126,13 +138,28 @@ def leave_action(leave_id, status):
                 ed = datetime.strptime(str(leave_info['end_date']), '%Y-%m-%d').date()
                 days = (ed - sd).days + 1
 
-                cursor.execute("""
-                    UPDATE leave_balance 
-                    SET used_days = used_days + %s 
-                    WHERE emp_id = (SELECT emp_id FROM leaves WHERE leave_id = %s) 
-                    AND leave_type = %s
-                """, (days, leave_id, leave_info['leave_type']))
-            
+                cursor.execute("SELECT emp_id FROM leaves WHERE leave_id = %s", (leave_id,))
+                emp_row = cursor.fetchone()
+                if emp_row:
+                    cursor.execute("""
+                        SELECT id FROM leave_balance
+                        WHERE emp_id = %s AND leave_type = %s
+                    """, (emp_row['emp_id'], leave_info['leave_type']))
+                    bal = cursor.fetchone()
+                    if not bal:
+                        import datetime
+                        current_year = datetime.datetime.now().year
+                        cursor.execute("""
+                            INSERT INTO leave_balance (emp_id, leave_type, total_days, used_days, year)
+                            VALUES (%s, %s, 12, %s, %s)
+                        """, (emp_row['emp_id'], leave_info['leave_type'], days, current_year))
+                    else:
+                        cursor.execute("""
+                            UPDATE leave_balance
+                            SET used_days = used_days + %s
+                            WHERE emp_id = %s AND leave_type = %s
+                        """, (days, emp_row['emp_id'], leave_info['leave_type']))
+
             if leave_info:
                 from app.utils import create_notification
                 create_notification(leave_info['user_id'], f"Your {leave_info['leave_type']} leave has been {status}.", 'info' if status == 'Approved' else 'danger')
@@ -142,9 +169,11 @@ def leave_action(leave_id, status):
         log_audit(session['user_id'], f"Leave {leave_id} {status}")
         flash(f'Leave {status} successfully.', 'success')
     except Exception as e:
-        flash(f'Action failed: {str(e)}', 'danger')
-        
+        logger.error("Leave action error: %s", e)
+        flash('An unexpected error occurred.', 'danger')
+
     return redirect(url_for('leave.index'))
+
 
 @leave_bp.route('/leave/cancel/<int:leave_id>', methods=['POST'])
 @login_required
@@ -155,7 +184,7 @@ def cancel_leave(leave_id):
         conn = get_db_connection()
         with conn.cursor() as cursor:
             cursor.execute("""
-                SELECT l.emp_id, l.status, e.user_id 
+                SELECT l.emp_id, l.status, e.user_id
                 FROM leaves l
                 JOIN employee e ON l.emp_id = e.emp_id
                 WHERE l.leave_id = %s
@@ -181,6 +210,7 @@ def cancel_leave(leave_id):
         log_audit(user_id, f"Cancelled leave request {leave_id}")
         flash('Leave request cancelled successfully.', 'success')
     except Exception as e:
-        flash(f'Error cancelling leave: {str(e)}', 'danger')
+        logger.error("Cancel leave error: %s", e)
+        flash('An unexpected error occurred.', 'danger')
 
     return redirect(url_for('leave.index'))

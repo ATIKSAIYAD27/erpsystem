@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Quotations - Nexus ERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card { border-radius: 20px; padding: 24px; }
+    .stat-card:hover { border-color: rgba(59,130,246,0.3); }
+    .stat-icon { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 14px; }
+    .status-Draft { background: rgba(148,163,184,0.1); color: #94a3b8; border: 1px solid rgba(148,163,184,0.2); }
+    .status-Sent { background: rgba(59,130,246,0.1); color: #3b82f6; border: 1px solid rgba(59,130,246,0.2); }
+    .status-Accepted { background: rgba(16,185,129,0.1); color: #10b981; border: 1px solid rgba(16,185,129,0.2); }
+    .status-Rejected { background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.2); }
+    .status-Expired { background: rgba(245,158,11,0.1); color: #f59e0b; border: 1px solid rgba(245,158,11,0.2); }
+    .status-Converted { background: rgba(139,92,246,0.1); color: #8b5cf6; border: 1px solid rgba(139,92,246,0.2); }
+    .btn-premium {
+        background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+        border: none; color: white; padding: 12px 24px; border-radius: 14px;
+        font-weight: 700; transition: 0.3s;
+    }
+    .btn-premium:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(59,130,246,0.3); color: white; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="header-section animate-up">
+    <div>
+        <h1 class="page-title">Quotation Manager</h1>
+        <div class="text-secondary">Create, send, and track quotations</div>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+        {% include 'header_search.html' %}
+        <a href="{{ url_for('quotation.quotation_create') }}" class="btn btn-premium">
+            <i class="bi bi-plus-lg me-2"></i>New Quotation
+        </a>
+    </div>
+</div>
+
+<!-- Stats Row -->
+<div class="row g-4 mb-5 animate-up delay-1">
+    <div class="col-xl-3 col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(59,130,246,0.1); color:var(--accent-blue);"><i class="bi bi-file-earmark-text"></i></div>
+            <div class="text-white fw-bold fs-4">{{ total_quotes }}</div>
+            <div class="text-secondary" style="font-size:13px;">Total Quotations</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(59,130,246,0.1); color:var(--accent-blue);"><i class="bi bi-send"></i></div>
+            <div class="text-white fw-bold fs-4">{{ pending }}</div>
+            <div class="text-secondary" style="font-size:13px;">Awaiting Response</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(16,185,129,0.1); color:var(--accent-green);"><i class="bi bi-check-circle"></i></div>
+            <div class="text-white fw-bold fs-4">{{ accepted }}</div>
+            <div class="text-secondary" style="font-size:13px;">Accepted</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(16,185,129,0.1); color:var(--accent-green);"><i class="bi bi-currency-rupee"></i></div>
+            <div class="text-white fw-bold fs-4">{{ total_value|indian_currency }}</div>
+            <div class="text-secondary" style="font-size:13px;">Accepted Value</div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="d-flex align-items-center gap-3 mb-4 animate-up delay-2">
+    <form class="d-flex gap-2 flex-grow-1" method="GET">
+        <div class="input-group" style="max-width:400px;">
+            <span class="input-group-text bg-transparent border-secondary" style="border-right:none;border-radius:12px 0 0 12px;">
+                <i class="bi bi-search text-secondary"></i>
+            </span>
+            <input type="text" class="form-control" name="q" placeholder="Search quotations..." value="{{ search_query }}" style="border-left:none;">
+        </div>
+        <select class="form-select" name="status" style="max-width:180px;border-radius:12px;" onchange="this.form.submit()">
+            <option value="">All Status</option>
+            <option value="Draft" {% if status_filter == 'Draft' %}selected{% endif %}>Draft</option>
+            <option value="Sent" {% if status_filter == 'Sent' %}selected{% endif %}>Sent</option>
+            <option value="Accepted" {% if status_filter == 'Accepted' %}selected{% endif %}>Accepted</option>
+            <option value="Rejected" {% if status_filter == 'Rejected' %}selected{% endif %}>Rejected</option>
+            <option value="Expired" {% if status_filter == 'Expired' %}selected{% endif %}>Expired</option>
+        </select>
+        <button type="submit" class="btn btn-sm" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);color:var(--accent-blue);border-radius:10px;font-weight:600;">Filter</button>
+    </form>
+</div>
+
+<!-- Quotations Table -->
+<div class="glass-card animate-up delay-3">
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Quote #</th>
+                    <th>Customer</th>
+                    <th>Subject</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Valid Until</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for q in quotations %}
+                <tr>
+                    <td><span class="fw-bold" style="color:var(--accent-blue);">{{ q.quote_number }}</span></td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div style="width:30px;height:30px;border-radius:50%;background:rgba(59,130,246,0.1);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--accent-blue);font-weight:800;">{{ (q.customer_name or '?')[0] }}</div>
+                            <span class="text-white">{{ q.customer_name or 'N/A' }}</span>
+                        </div>
+                    </td>
+                    <td class="text-secondary">{{ q.subject[:40] }}{% if q.subject|length > 40 %}...{% endif %}</td>
+                    <td class="text-success fw-bold">{{ q.grand_total|indian_currency }}</td>
+                    <td><span class="status-badge status-{{ q.status }}">{{ q.status }}</span></td>
+                    <td class="text-secondary">{{ q.valid_until }}</td>
+                    <td class="text-end">
+                        <div class="d-flex gap-1 justify-content-end">
+                            <a href="{{ url_for('quotation.quotation_detail', quote_id=q.quote_id) }}" class="btn btn-sm" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);color:var(--accent-blue);border-radius:8px;" title="View">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="{{ url_for('quotation.quotation_pdf', quote_id=q.quote_id) }}" class="btn btn-sm" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:var(--accent-red);border-radius:8px;" title="Download PDF">
+                                <i class="bi bi-file-earmark-pdf"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center py-5 text-secondary">
+                        <i class="bi bi-file-earmark-text" style="font-size:48px;opacity:0.3;"></i>
+                        <div class="mt-2">No quotations found. Create your first quotation!</div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

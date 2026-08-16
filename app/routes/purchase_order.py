@@ -1,60 +1,54 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
-import pymysql
-from app.utils import login_required, admin_required
+from app.utils import login_required, manager_or_admin_required, admin_required, log_audit, get_db, safe_int, safe_float
+import logging
 
 po_bp = Blueprint('po', __name__)
 
-from app.db import get_db_connection
+logger = logging.getLogger(__name__)
 
 
 @po_bp.route('/purchase-orders')
 @login_required
 def po_list():
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
-
     status_filter = request.args.get('status', '')
     try:
-        conn = get_db_connection()
-        with conn.cursor() as cursor:
-            if status_filter:
-                sql = """
-                    SELECT po.po_id, po.order_date, po.expected_delivery, po.total_amount, po.status,
-                           s.name as supplier_name
-                    FROM purchase_order po
-                    LEFT JOIN supplier s ON po.supplier_id = s.supplier_id
-                    WHERE po.status = %s
-                    ORDER BY po.po_id DESC
-                """
-                cursor.execute(sql, (status_filter,))
-            else:
-                sql = """
-                    SELECT po.po_id, po.order_date, po.expected_delivery, po.total_amount, po.status,
-                           s.name as supplier_name
-                    FROM purchase_order po
-                    LEFT JOIN supplier s ON po.supplier_id = s.supplier_id
-                    ORDER BY po.po_id DESC
-                """
-                cursor.execute(sql)
-            purchase_orders = cursor.fetchall()
+        with get_db() as conn:
+            with conn.cursor() as cursor:
+                if status_filter:
+                    sql = """
+                        SELECT po.po_id, po.order_date, po.expected_delivery, po.total_amount, po.status,
+                               s.name as supplier_name
+                        FROM purchase_order po
+                        LEFT JOIN supplier s ON po.supplier_id = s.supplier_id
+                        WHERE po.status = %s
+                        ORDER BY po.po_id DESC
+                    """
+                    cursor.execute(sql, (status_filter,))
+                else:
+                    sql = """
+                        SELECT po.po_id, po.order_date, po.expected_delivery, po.total_amount, po.status,
+                               s.name as supplier_name
+                        FROM purchase_order po
+                        LEFT JOIN supplier s ON po.supplier_id = s.supplier_id
+                        ORDER BY po.po_id DESC
+                    """
+                    cursor.execute(sql)
+                purchase_orders = cursor.fetchall()
 
-            cursor.execute("SELECT supplier_id, name FROM supplier ORDER BY name")
-            suppliers = cursor.fetchall()
+                cursor.execute("SELECT supplier_id, name FROM supplier ORDER BY name")
+                suppliers = cursor.fetchall()
 
-        conn.close()
         return render_template('purchase_orders.html', purchase_orders=purchase_orders, suppliers=suppliers)
 
     except Exception as e:
-        flash(f'Database error: {str(e)}', 'danger')
+        logger.error("PO list error: %s", e)
+        flash('An unexpected error occurred.', 'danger')
         return render_template('purchase_orders.html', purchase_orders=[], suppliers=[])
 
 
 @po_bp.route('/purchase-orders/add', methods=['POST'])
-@login_required
+@manager_or_admin_required
 def add_po():
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
-
     supplier_id = request.form.get('supplier_id')
     order_date = request.form.get('order_date')
     expected_delivery = request.form.get('expected_delivery')
@@ -74,31 +68,35 @@ def add_po():
         total_amount = 0
         items = []
         for i in range(len(product_ids)):
-            qty = int(quantities[i])
-            cost = float(unit_costs[i])
+            qty = safe_int(quantities[i], 0)
+            cost = safe_float(unit_costs[i], 0)
+            if qty <= 0 or cost <= 0:
+                flash(f'Invalid quantity or cost for item {i+1}.', 'danger')
+                return redirect(url_for('po.po_list'))
             total_amount += qty * cost
             items.append((product_ids[i], qty, cost))
 
-        conn = get_db_connection()
-        with conn.cursor() as cursor:
-            cursor.execute("""
-                INSERT INTO purchase_order (supplier_id, order_date, expected_delivery, total_amount, status)
-                VALUES (%s, %s, %s, %s, 'Pending')
-            """, (supplier_id, order_date, expected_delivery, total_amount))
-            po_id = cursor.lastrowid
-
-            for product_id, qty, unit_cost in items:
+        with get_db() as conn:
+            with conn.cursor() as cursor:
                 cursor.execute("""
-                    INSERT INTO purchase_order_item (po_id, product_id, quantity, unit_cost)
-                    VALUES (%s, %s, %s, %s)
-                """, (po_id, product_id, qty, unit_cost))
+                    INSERT INTO purchase_order (supplier_id, order_date, expected_delivery, total_amount, status, created_by)
+                    VALUES (%s, %s, %s, %s, 'Pending', %s)
+                """, (supplier_id, order_date, expected_delivery, total_amount, session['user_id']))
+                po_id = cursor.lastrowid
 
-        conn.commit()
-        conn.close()
+                for product_id, qty, unit_cost in items:
+                    cursor.execute("""
+                        INSERT INTO purchase_order_item (po_id, product_id, quantity, unit_cost)
+                        VALUES (%s, %s, %s, %s)
+                    """, (po_id, product_id, qty, unit_cost))
+
+            conn.commit()
+        log_audit(session['user_id'], f"Created purchase order {po_id}")
         flash('Purchase order created successfully.', 'success')
 
     except Exception as e:
-        flash(f'Error creating purchase order: {str(e)}', 'danger')
+        logger.error("Add PO error: %s", e)
+        flash('An unexpected error occurred.', 'danger')
 
     return redirect(url_for('po.po_list'))
 
@@ -106,47 +104,40 @@ def add_po():
 @po_bp.route('/purchase-orders/<int:po_id>')
 @login_required
 def po_detail(po_id):
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
-
     try:
-        conn = get_db_connection()
-        with conn.cursor() as cursor:
-            cursor.execute("""
-                SELECT po.*, s.name as supplier_name, s.email as supplier_email, s.phone as supplier_phone
-                FROM purchase_order po
-                LEFT JOIN supplier s ON po.supplier_id = s.supplier_id
-                WHERE po.po_id = %s
-            """, (po_id,))
-            po = cursor.fetchone()
+        with get_db() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    SELECT po.*, s.name as supplier_name, s.email as supplier_email, s.phone as supplier_phone
+                    FROM purchase_order po
+                    LEFT JOIN supplier s ON po.supplier_id = s.supplier_id
+                    WHERE po.po_id = %s
+                """, (po_id,))
+                po = cursor.fetchone()
 
-            if not po:
-                flash('Purchase order not found.', 'danger')
-                return redirect(url_for('po.po_list'))
+                if not po:
+                    flash('Purchase order not found.', 'danger')
+                    return redirect(url_for('po.po_list'))
 
-            cursor.execute("""
-                SELECT poi.*, p.name as product_name, p.sku
-                FROM purchase_order_item poi
-                LEFT JOIN product p ON poi.product_id = p.product_id
-                WHERE poi.po_id = %s
-            """, (po_id,))
-            items = cursor.fetchall()
+                cursor.execute("""
+                    SELECT poi.*, p.name as product_name, p.sku
+                    FROM purchase_order_item poi
+                    LEFT JOIN product p ON poi.product_id = p.product_id
+                    WHERE poi.po_id = %s
+                """, (po_id,))
+                items = cursor.fetchall()
 
-        conn.close()
         return render_template('po_detail.html', po=po, items=items)
 
     except Exception as e:
-        flash(f'Database error: {str(e)}', 'danger')
+        logger.error("PO detail error: %s", e)
+        flash('An unexpected error occurred.', 'danger')
         return redirect(url_for('po.po_list'))
 
 
 @po_bp.route('/purchase-orders/<int:po_id>/status', methods=['POST'])
-@login_required
-@admin_required
+@manager_or_admin_required
 def update_po_status(po_id):
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
-
     new_status = request.form.get('status')
     valid_statuses = ['Pending', 'Approved', 'Received', 'Cancelled']
 
@@ -155,50 +146,48 @@ def update_po_status(po_id):
         return redirect(url_for('po.po_detail', po_id=po_id))
 
     try:
-        conn = get_db_connection()
-        with conn.cursor() as cursor:
-            cursor.execute("SELECT status FROM purchase_order WHERE po_id = %s", (po_id,))
-            po = cursor.fetchone()
-            if not po:
-                flash('Purchase order not found.', 'danger')
-                return redirect(url_for('po.po_list'))
+        with get_db() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT status FROM purchase_order WHERE po_id = %s", (po_id,))
+                po = cursor.fetchone()
+                if not po:
+                    flash('Purchase order not found.', 'danger')
+                    return redirect(url_for('po.po_list'))
 
-            cursor.execute("UPDATE purchase_order SET status = %s WHERE po_id = %s", (new_status, po_id))
+                cursor.execute("UPDATE purchase_order SET status = %s WHERE po_id = %s", (new_status, po_id))
 
-            if new_status == 'Received':
-                cursor.execute("SELECT product_id, quantity FROM purchase_order_item WHERE po_id = %s", (po_id,))
-                items = cursor.fetchall()
-                for item in items:
-                    cursor.execute("""
-                        UPDATE product SET quantity = quantity + %s WHERE product_id = %s
-                    """, (item['quantity'], item['product_id']))
+                if new_status == 'Received':
+                    cursor.execute("SELECT product_id, quantity FROM purchase_order_item WHERE po_id = %s", (po_id,))
+                    items = cursor.fetchall()
+                    for item in items:
+                        cursor.execute("""
+                            UPDATE product SET quantity = quantity + %s WHERE product_id = %s
+                        """, (item['quantity'], item['product_id']))
 
-        conn.commit()
-        conn.close()
+            conn.commit()
+        log_audit(session['user_id'], f"Updated PO {po_id} status to {new_status}")
         flash(f'Purchase order status updated to {new_status}.', 'success')
 
     except Exception as e:
-        flash(f'Error updating status: {str(e)}', 'danger')
+        logger.error("Update PO status error: %s", e)
+        flash('An unexpected error occurred.', 'danger')
 
     return redirect(url_for('po.po_detail', po_id=po_id))
 
 
-@po_bp.route('/purchase-orders/delete/<int:po_id>')
-@login_required
+@po_bp.route('/purchase-orders/delete/<int:po_id>', methods=['POST'])
 @admin_required
 def delete_po(po_id):
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
-
     try:
-        conn = get_db_connection()
-        with conn.cursor() as cursor:
-            cursor.execute("DELETE FROM purchase_order_item WHERE po_id = %s", (po_id,))
-            cursor.execute("DELETE FROM purchase_order WHERE po_id = %s", (po_id,))
-        conn.commit()
-        conn.close()
+        with get_db() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("DELETE FROM purchase_order_item WHERE po_id = %s", (po_id,))
+                cursor.execute("DELETE FROM purchase_order WHERE po_id = %s", (po_id,))
+            conn.commit()
+        log_audit(session['user_id'], f"Deleted purchase order {po_id}")
         flash('Purchase order deleted successfully.', 'success')
     except Exception as e:
-        flash(f'Error deleting purchase order: {str(e)}', 'danger')
+        logger.error("Delete PO error: %s", e)
+        flash('An unexpected error occurred.', 'danger')
 
     return redirect(url_for('po.po_list'))

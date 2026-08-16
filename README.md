@@ -13,12 +13,14 @@ cd C:\Users\atiks\OneDrive\Documents\erpsystem
 ```bash
 venv\Scripts\activate
 ```
-
+                                                             
 ### Step 3: Initialize database (first time only)
 
 ```bash
 python init_db.py
 python migrate_db.py
+python migrate_godtier.py
+python migrate_fixes.py
 ```
 
 ### Step 4: Start the server
@@ -35,5 +37,5 @@ http://127.0.0.1:5000
 
 ### Login
 
-- Email: admin@erp.com
+- Email: admin@nexus-erp.in
 - Password: admin123

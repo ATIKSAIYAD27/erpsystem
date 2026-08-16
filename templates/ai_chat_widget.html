@@ -7,13 +7,13 @@
         width: 60px;
         height: 60px;
         border-radius: 50%;
-        background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+        background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
         border: none;
         color: white;
         font-size: 24px;
         cursor: pointer;
         box-shadow: 0 8px 30px rgba(59, 130, 246, 0.4);
-        z-index: 9999;
+        z-index: 1100;
         transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         display: flex;
         align-items: center;
@@ -42,10 +42,10 @@
         right: 30px;
         width: 400px;
         height: 550px;
-        background: #0a0f19;
-        border: 1px solid rgba(255,255,255,0.08);
+        background: var(--sidebar-bg);
+        border: 1px solid var(--card-border);
         border-radius: 24px;
-        z-index: 9998;
+        z-index: 1100;
         display: none;
         flex-direction: column;
         overflow: hidden;
@@ -62,7 +62,7 @@
     .ai-chat-header {
         padding: 18px 20px;
         background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.15));
-        border-bottom: 1px solid rgba(255,255,255,0.06);
+        border-bottom: 1px solid var(--card-border);
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -163,7 +163,7 @@
 
     .ai-chat-input-area {
         padding: 14px 16px;
-        border-top: 1px solid rgba(255,255,255,0.06);
+        border-top: 1px solid var(--card-border);
         display: flex;
         gap: 10px;
         background: rgba(10,15,25,0.8);
@@ -171,7 +171,7 @@
     .ai-chat-input-area input {
         flex: 1;
         background: rgba(255,255,255,0.05);
-        border: 1px solid rgba(255,255,255,0.08);
+        border: 1px solid var(--card-border);
         border-radius: 14px;
         padding: 12px 16px;
         color: white;
@@ -188,7 +188,7 @@
         width: 44px;
         height: 44px;
         border-radius: 14px;
-        background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+        background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
         border: none;
         color: white;
         font-size: 16px;
@@ -223,9 +223,25 @@
         border-color: rgba(59,130,246,0.3);
         color: #3b82f6;
     }
+
+    @media (max-width: 480px) {
+        .ai-chat-panel {
+            width: calc(100vw - 20px);
+            right: 10px;
+            bottom: 80px;
+            height: 70vh;
+        }
+        .ai-chat-fab {
+            bottom: 20px;
+            right: 20px;
+            width: 52px;
+            height: 52px;
+            font-size: 20px;
+        }
+    }
 </style>
 
-<button class="ai-chat-fab" id="aiChatFab" title="Nexus AI Assistant">
+<button class="ai-chat-fab" id="aiChatFab" title="Nexus AI Assistant" aria-label="Open AI Assistant">
     <div class="pulse-ring"></div>
     <i class="bi bi-robot"></i>
 </button>
@@ -311,7 +327,7 @@
         try {
             const res = await fetch('/api/ai/chat', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: {'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('meta[name=csrf-token]').content},
                 body: JSON.stringify({message: text})
             });
             const data = await res.json();

@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}Import & Export - Nexus ERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .upload-zone input[type="file"] {
+        display: none;
+    }
+    .btn-import {
+        background: linear-gradient(135deg, var(--accent-blue), #2563eb);
+        border: none;
+        border-radius: 12px;
+        font-weight: 700;
+        box-shadow: 0 10px 20px rgba(59, 130, 246, 0.2);
+    }
+    .btn-export {
+        border-radius: 12px;
+        font-weight: 600;
+        padding: 12px 24px;
+    }
+    .import-card {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 20px;
+        padding: 28px;
+        backdrop-filter: blur(15px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="header-section animate-up">
+    <div>
+        <h1 class="page-title">Import & Export</h1>
+        <div class="text-secondary">Bulk data operations for employees, products, and customers.</div>
+    </div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }} rounded-4 border-0 mb-4 animate-up">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<!-- Import Section -->
+<div class="row g-4 mb-5">
+    <div class="col-lg-4 animate-up delay-1">
+        <div class="import-card h-100">
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div class="card-icon-wrapper blue-glow" style="width: 44px; height: 44px; border-radius: 12px; background: rgba(59,130,246,0.1); display: flex; align-items: center; justify-content: center; color: var(--accent-blue); font-size: 20px;">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+                <h5 class="fw-bold m-0">Import Employees</h5>
+            </div>
+            <form action="/import/employees" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="upload-zone mb-3" onclick="this.querySelector('input').click()">
+                    <input type="file" name="file" accept=".csv" required onchange="this.closest('.upload-zone').querySelector('.upload-label').textContent = this.files[0].name">
+                    <i class="bi bi-cloud-arrow-up fs-1 text-secondary mb-2"></i>
+                    <div class="upload-label text-secondary small">Drop CSV or click to browse</div>
+                </div>
+                <button type="submit" class="btn btn-import text-white w-100">
+                    <i class="bi bi-upload me-2"></i>Import Employees
+                </button>
+            </form>
+        </div>
+    </div>
+    <div class="col-lg-4 animate-up delay-2">
+        <div class="import-card h-100">
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div class="card-icon-wrapper green-glow" style="width: 44px; height: 44px; border-radius: 12px; background: rgba(16,185,129,0.1); display: flex; align-items: center; justify-content: center; color: var(--accent-green); font-size: 20px;">
+                    <i class="bi bi-box-seam-fill"></i>
+                </div>
+                <h5 class="fw-bold m-0">Import Products</h5>
+            </div>
+            <form action="/import/products" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="upload-zone mb-3" onclick="this.querySelector('input').click()">
+                    <input type="file" name="file" accept=".csv" required onchange="this.closest('.upload-zone').querySelector('.upload-label').textContent = this.files[0].name">
+                    <i class="bi bi-cloud-arrow-up fs-1 text-secondary mb-2"></i>
+                    <div class="upload-label text-secondary small">Drop CSV or click to browse</div>
+                </div>
+                <button type="submit" class="btn btn-import text-white w-100" style="background: linear-gradient(135deg, var(--accent-green), #059669); box-shadow: 0 10px 20px rgba(16, 185, 129, 0.2);">
+                    <i class="bi bi-upload me-2"></i>Import Products
+                </button>
+            </form>
+        </div>
+    </div>
+    <div class="col-lg-4 animate-up delay-3">
+        <div class="import-card h-100">
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div class="card-icon-wrapper purple-glow" style="width: 44px; height: 44px; border-radius: 12px; background: rgba(139,92,246,0.1); display: flex; align-items: center; justify-content: center; color: var(--accent-purple); font-size: 20px;">
+                    <i class="bi bi-person-lines-fill"></i>
+                </div>
+                <h5 class="fw-bold m-0">Import Customers</h5>
+            </div>
+            <form action="/import/customers" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="upload-zone mb-3" onclick="this.querySelector('input').click()">
+                    <input type="file" name="file" accept=".csv" required onchange="this.closest('.upload-zone').querySelector('.upload-label').textContent = this.files[0].name">
+                    <i class="bi bi-cloud-arrow-up fs-1 text-secondary mb-2"></i>
+                    <div class="upload-label text-secondary small">Drop CSV or click to browse</div>
+                </div>
+                <button type="submit" class="btn btn-import text-white w-100" style="background: linear-gradient(135deg, var(--accent-purple), #7c3aed); box-shadow: 0 10px 20px rgba(139, 92, 246, 0.2);">
+                    <i class="bi bi-upload me-2"></i>Import Customers
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Export Section -->
+<div class="glass-card animate-up delay-4">
+    <h5 class="fw-bold mb-4">Export Data</h5>
+    <div class="row g-3">
+        <div class="col-lg-3 col-md-6">
+            <a href="/export/employees" class="btn btn-export btn-outline-primary w-100 d-flex align-items-center justify-content-center gap-2">
+                <i class="bi bi-filetype-csv fs-5"></i>
+                <div class="text-start">
+                    <div class="fw-bold">Employees</div>
+                    <div class="small text-secondary">All staff data</div>
+                </div>
+            </a>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <a href="/export/products" class="btn btn-export btn-outline-success w-100 d-flex align-items-center justify-content-center gap-2">
+                <i class="bi bi-filetype-csv fs-5"></i>
+                <div class="text-start">
+                    <div class="fw-bold">Products</div>
+                    <div class="small text-secondary">Inventory items</div>
+                </div>
+            </a>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <a href="/export/customers" class="btn btn-export btn-outline-info w-100 d-flex align-items-center justify-content-center gap-2">
+                <i class="bi bi-filetype-csv fs-5"></i>
+                <div class="text-start">
+                    <div class="fw-bold">Customers</div>
+                    <div class="small text-secondary">Client records</div>
+                </div>
+            </a>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <a href="/export/sales" class="btn btn-export btn-outline-warning w-100 d-flex align-items-center justify-content-center gap-2">
+                <i class="bi bi-filetype-csv fs-5"></i>
+                <div class="text-start">
+                    <div class="fw-bold">Sales</div>
+                    <div class="small text-secondary">Sales transactions</div>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

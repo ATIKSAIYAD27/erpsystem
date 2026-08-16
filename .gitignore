@@ -4,4 +4,7 @@ __pycache__/
 .env
 *.log
 scratch/
-test_conn_root.py
+scripts/
+tests/__pycache__/
+.pytest_cache/
+*.db

@@ -1,338 +1,188 @@
-<!DOCTYPE html>
-<html lang="en" data-bs-theme="dark">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leave Management - Nexus ERP</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
-    <style>
-        :root {
-            --bg-color: #05070a;
-            --sidebar-bg: #0a0f19;
-            --card-bg: rgba(15, 23, 42, 0.6);
-            --card-border: rgba(255, 255, 255, 0.04);
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --accent-blue: #3b82f6;
-            --accent-purple: #8b5cf6;
-            --accent-green: #10b981;
-            --accent-red: #ef4444;
-        }
+{% extends "base.html" %}
 
-        body {
-            font-family: 'Outfit', sans-serif;
-            background-color: var(--bg-color);
-            background-image: 
-                radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.03) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.03) 0%, transparent 40%);
-            color: var(--text-primary);
-            min-height: 100vh;
-            margin: 0;
-            background-attachment: fixed;
-            display: flex;
-        }
+{% block title %}Leave Management - Nexus ERP{% endblock %}
 
-        /* Standard Sidebar */
-        .sidebar {
-            width: 280px;
-            height: 100vh;
-            position: fixed;
-            left: 0;
-            top: 0;
-            background: var(--sidebar-bg);
-            border-right: 1px solid var(--card-border);
-            padding: 35px 25px;
-            display: flex;
-            flex-direction: column;
-            z-index: 1000;
-            backdrop-filter: blur(20px);
-        }
+{% block extra_css %}
+<style>
+    .btn-apply {
+        background: linear-gradient(135deg, var(--accent-blue), #2563eb);
+        border: none;
+        padding: 12px 30px;
+        border-radius: 15px;
+        font-weight: 700;
+        box-shadow: 0 10px 20px rgba(59, 130, 246, 0.2);
+    }
+</style>
+{% endblock %}
 
-        .nav-link {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 12px 18px;
-            border-radius: 12px;
-            color: var(--text-secondary);
-            text-decoration: none;
-            transition: 0.3s;
-            margin-bottom: 5px;
-        }
+{% block content %}
+<div class="header-section">
+    <div>
+        <h1 class="page-title">Leave Management</h1>
+        <p class="page-subtitle">Request time off and manage approvals.</p>
+    </div>
+    {% if is_employee %}
+    <button class="btn btn-apply text-white" data-bs-toggle="modal" data-bs-target="#applyLeaveModal">
+        <i class="bi bi-plus-lg me-2"></i> Apply for Leave
+    </button>
+    {% endif %}
+</div>
 
-        .nav-link:hover, .nav-link.active {
-            background: rgba(255, 255, 255, 0.05);
-            color: white;
-        }
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }} rounded-4 border-0 mb-4">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
 
-        .main-wrapper {
-            flex: 1;
-            padding: 40px;
-            overflow-y: auto;
-        }
-
-        .glass-card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 28px;
-            padding: 30px;
-            backdrop-filter: blur(15px);
-        }
-
-        .status-badge {
-            padding: 6px 14px;
-            border-radius: 10px;
-            font-size: 12px;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-
-        .status-pending { background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.2); }
-        .status-approved { background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); }
-        .status-rejected { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
-
-        .btn-apply {
-            background: linear-gradient(135deg, var(--accent-blue), #2563eb);
-            border: none;
-            padding: 12px 30px;
-            border-radius: 15px;
-            font-weight: 700;
-            box-shadow: 0 10px 20px rgba(59, 130, 246, 0.2);
-        }
-
-        .form-control, .form-select {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            color: white;
-            border-radius: 12px;
-            padding: 12px;
-        }
-
-        .form-control:focus {
-            background: rgba(255, 255, 255, 0.05);
-            border-color: var(--accent-blue);
-            box-shadow: none;
-            color: white;
-        }
-
-        .avatar-sm {
-            width: 35px;
-            height: 35px;
-            border-radius: 10px;
-            background: linear-gradient(45deg, var(--accent-blue), var(--accent-purple));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 14px;
-        }
-    </style>
-</head>
-<body>
-    <nav class="sidebar">
-        <div class="mb-5 d-flex align-items-center gap-3">
-            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple)); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px;">
-                <i class="bi bi-calendar-check-fill"></i>
-            </div>
-            <h4 class="m-0 fw-800">Nexus Leave</h4>
-        </div>
-
-        <a href="/dashboard" class="nav-link"><i class="bi bi-grid-1x2-fill"></i> Overview</a>
-        <a href="/employee" class="nav-link"><i class="bi bi-people"></i> Workforce</a>
-        <a href="/attendance" class="nav-link"><i class="bi bi-clock-history"></i> Attendance</a>
-        <a href="/leaves" class="nav-link active"><i class="bi bi-calendar2-week"></i> Leave Portal</a>
-        <a href="/payroll" class="nav-link"><i class="bi bi-cash-stack"></i> Payroll</a>
-        <a href="/mail" class="nav-link"><i class="bi bi-envelope-at-fill"></i> Nexus Mail {% if mail_count > 0 %}<span class="badge rounded-pill bg-primary ms-auto" style="font-size: 10px;">{{ mail_count }}</span>{% endif %}</a>
-        <a href="/finance" class="nav-link"><i class="bi bi-wallet2"></i> Finance Hub</a>
-        <a href="/expense-reports" class="nav-link"><i class="bi bi-file-earmark-bar-graph"></i> Expense Reports</a>
-        <a href="/inventory" class="nav-link"><i class="bi bi-box-seam-fill"></i> Inventory</a>
-        <a href="/sales" class="nav-link"><i class="bi bi-graph-up-arrow"></i> Sales & CRM</a>
-        <a href="/customers" class="nav-link"><i class="bi bi-person-lines-fill"></i> Customers</a>
-        <a href="/suppliers" class="nav-link"><i class="bi bi-truck"></i> Suppliers</a>
-        <a href="/purchase-orders" class="nav-link"><i class="bi bi-cart-check"></i> Purchase Orders</a>
-        <a href="/projects" class="nav-link"><i class="bi bi-kanban"></i> Projects</a>
-        {% if session.get('role_name') == 'Admin' %}<a href="/company-settings" class="nav-link"><i class="bi bi-building-gear"></i> Company Settings</a>{% endif %}
-        {% if session.get('role_name') == 'Admin' %}<a href="/audit-log" class="nav-link"><i class="bi bi-journal-text"></i> Audit Log</a>{% endif %}
-        <a href="/notifications" class="nav-link">
-            <i class="bi bi-bell"></i> Alerts
-            {% if notif_count > 0 %}
-            <span class="badge rounded-pill bg-danger ms-auto" style="font-size: 10px;">{{ notif_count }}</span>
-            {% endif %}
-        </a>
-        <a href="/settings" class="nav-link"><i class="bi bi-gear-fill"></i> Settings</a>
-        <a href="{{ url_for('auth.logout') }}" class="nav-link text-danger"><i class="bi bi-power"></i> Logout</a>
-    </nav>
-
-    <main class="main-wrapper">
-        <div class="d-flex justify-content-between align-items-center mb-5">
-            <div>
-                <h1 class="fw-800 m-0">Leave Management</h1>
-                <p class="text-secondary m-0">Request time off and manage approvals.</p>
-            </div>
-            {% if is_employee %}
-            <button class="btn btn-apply text-white" data-bs-toggle="modal" data-bs-target="#applyLeaveModal">
-                <i class="bi bi-plus-lg me-2"></i> Apply for Leave
-            </button>
-            {% endif %}
-        </div>
-
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} rounded-4 border-0 mb-4">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
-        <div class="row g-4">
-            <!-- Manager View (All Requests) -->
-            <div class="col-lg-8">
-                <div class="glass-card">
-                    <h5 class="fw-700 mb-4">Pending Requests</h5>
-                    <div class="table-responsive">
-                        <table class="table align-middle">
-                            <thead>
-                                <tr class="text-secondary small text-uppercase">
-                                    <th>Employee</th>
-                                    <th>Type</th>
-                                    <th>Dates</th>
-                                    <th>Status</th>
-                                    <th class="text-end">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for l in all_leaves %}
-                                <tr>
-                                    <td>
-                                        <div class="d-flex align-items-center gap-3">
-                                            <div class="avatar-sm">{{ l.emp_name[0] }}</div>
-                                            <div>
-                                                <div class="fw-700">{{ l.emp_name }}</div>
-                                                <div class="text-secondary small">{{ l.job_title }}</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td><span class="text-white-50">{{ l.leave_type }}</span></td>
-                                    <td>
-                                        <div class="small">{{ l.start_date }}</div>
-                                        <div class="text-secondary x-small">to {{ l.end_date }}</div>
-                                    </td>
-                                    <td>
-                                        <span class="status-badge status-{{ l.status|lower }}">{{ l.status }}</span>
-                                    </td>
-                                    <td class="text-end">
-                                        {% if l.status == 'Pending' %}
-                                        <div class="btn-group">
-                                            <a href="/leave/action/{{ l.leave_id }}/Approved" class="btn btn-sm btn-outline-success border-0"><i class="bi bi-check-circle-fill"></i></a>
-                                            <a href="/leave/action/{{ l.leave_id }}/Rejected" class="btn btn-sm btn-outline-danger border-0"><i class="bi bi-x-circle-fill"></i></a>
-                                        </div>
-                                        {% else %}
-                                        <span class="text-secondary small italic">Processed</span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Side Stats -->
-            <div class="col-lg-4">
-                <div class="glass-card mb-4">
-                    <h5 class="fw-700 mb-3">Leave Balance</h5>
-                    {% if leave_balances %}
-                    {% for bal in leave_balances %}
-                    <div class="p-3 rounded-4 mb-3" style="background: rgba(255,255,255,0.02); border: 1px solid var(--card-border);">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="fw-700">{{ bal.leave_type }}</span>
-                            <span class="text-success fw-bold" style="font-size: 13px;">{{ bal.total_days - bal.used_days }} days left</span>
-                        </div>
-                        <div class="d-flex justify-content-between text-secondary small">
-                            <span>Total: {{ bal.total_days }}</span>
-                            <span>Used: {{ bal.used_days }}</span>
-                        </div>
-                        <div class="progress mt-2" style="height: 4px; background: rgba(255,255,255,0.05);">
-                            <div class="progress-bar bg-success" style="width: {{ (((bal.total_days - bal.used_days) / bal.total_days) * 100) if bal.total_days > 0 else 0 }}%"></div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                    {% else %}
-                    <div class="text-center text-secondary py-3 small opacity-50">No balance data available.</div>
-                    {% endif %}
-                </div>
-                <div class="glass-card mb-4">
-                    <h5 class="fw-700 mb-4">My Leave History</h5>
-                    {% for l in my_leaves %}
-                    <div class="p-3 rounded-4 mb-3" style="background: rgba(255,255,255,0.02); border: 1px solid var(--card-border);">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="fw-700">{{ l.leave_type }}</span>
-                            <span class="status-badge status-{{ l.status|lower }}" style="font-size: 10px;">{{ l.status }}</span>
-                        </div>
-                        <div class="text-secondary small mb-2">{{ l.start_date }} - {{ l.end_date }}</div>
-                        {% if l.status == 'Pending' %}
-                        <form action="/leave/cancel/{{ l.leave_id }}" method="POST" class="d-inline" onsubmit="return confirm('Cancel this leave request?')">
-                            <button type="submit" class="btn btn-sm btn-outline-danger border-0" style="font-size: 11px;">
-                                <i class="bi bi-x-circle me-1"></i> Cancel
-                            </button>
-                        </form>
-                        {% endif %}
-                    </div>
-                    {% endfor %}
-                    {% if not my_leaves %}
-                    <div class="text-center text-secondary py-4 small opacity-50">No history found.</div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <!-- Apply Leave Modal -->
-    <div class="modal fade" id="applyLeaveModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content bg-dark border-secondary rounded-4">
-                <form action="/leave/apply" method="POST">
-                    <div class="modal-header border-secondary">
-                        <h5 class="modal-title text-white fw-700">Apply for Time Off</h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body p-4">
-                        <div class="mb-3">
-                            <label class="form-label text-secondary small">Leave Type</label>
-                            <select name="leave_type" class="form-select">
-                                <option value="Sick Leave">Sick Leave</option>
-                                <option value="Casual Leave">Casual Leave</option>
-                                <option value="Vacation">Vacation</option>
-                                <option value="Paternity/Maternity">Paternity/Maternity</option>
-                            </select>
-                        </div>
-                        <div class="row g-3 mb-3">
-                            <div class="col-6">
-                                <label class="form-label text-secondary small">Start Date</label>
-                                <input type="date" name="start_date" class="form-control" required>
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label text-secondary small">End Date</label>
-                                <input type="date" name="end_date" class="form-control" required>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label text-secondary small">Reason</label>
-                            <textarea name="reason" class="form-control" rows="3" placeholder="Briefly explain your reason..." required></textarea>
-                        </div>
-                    </div>
-                    <div class="modal-footer border-0">
-                        <button type="submit" class="btn btn-apply text-white w-100">Submit Application</button>
-                    </div>
-                </form>
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="glass-card">
+            <h5 class="fw-bold mb-4">Pending Requests</h5>
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr class="text-secondary small text-uppercase">
+                            <th>Employee</th>
+                            <th>Type</th>
+                            <th>Dates</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for l in all_leaves %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="avatar-sm">{{ l.emp_name[0] }}</div>
+                                    <div>
+                                        <div class="fw-bold">{{ l.emp_name }}</div>
+                                        <div class="text-secondary small">{{ l.job_title }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="text-white-50">{{ l.leave_type }}</span></td>
+                            <td>
+                                <div class="small">{{ l.start_date }}</div>
+                                <div class="text-secondary small">to {{ l.end_date }}</div>
+                            </td>
+                            <td>
+                                <span class="status-badge status-{{ l.status|lower }}">{{ l.status }}</span>
+                            </td>
+                            <td class="text-end">
+                                {% if l.status == 'Pending' %}
+                                <div class="btn-group">
+                                    <form action="/leave/action/{{ l.leave_id }}/Approved" method="POST" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                        <button type="submit" class="btn btn-sm btn-outline-success border-0"><i class="bi bi-check-circle-fill"></i></button>
+                                    </form>
+                                    <form action="/leave/action/{{ l.leave_id }}/Rejected" method="POST" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                        <button type="submit" class="btn btn-sm btn-outline-danger border-0"><i class="bi bi-x-circle-fill"></i></button>
+                                    </form>
+                                </div>
+                                {% else %}
+                                <span class="text-secondary small fst-italic">Processed</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-</body>
-</html>
+    <div class="col-lg-4">
+        <div class="glass-card mb-4">
+            <h5 class="fw-bold mb-3">Leave Balance</h5>
+            {% if leave_balances %}
+            {% for bal in leave_balances %}
+            <div class="p-3 rounded-4 mb-3" style="background: rgba(255,255,255,0.02); border: 1px solid var(--card-border);">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="fw-bold">{{ bal.leave_type }}</span>
+                    <span class="text-success fw-bold" style="font-size: 13px;">{{ bal.total_days - bal.used_days }} days left</span>
+                </div>
+                <div class="d-flex justify-content-between text-secondary small">
+                    <span>Total: {{ bal.total_days }}</span>
+                    <span>Used: {{ bal.used_days }}</span>
+                </div>
+                <div class="progress mt-2" style="height: 4px; background: rgba(255,255,255,0.05);">
+                    <div class="progress-bar bg-success" style="width: {{ (((bal.total_days - bal.used_days) / bal.total_days) * 100) if bal.total_days > 0 else 0 }}%"></div>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="text-center text-secondary py-3 small opacity-50">No balance data available.</div>
+            {% endif %}
+        </div>
+        <div class="glass-card mb-4">
+            <h5 class="fw-bold mb-4">My Leave History</h5>
+            {% for l in my_leaves %}
+            <div class="p-3 rounded-4 mb-3" style="background: rgba(255,255,255,0.02); border: 1px solid var(--card-border);">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="fw-bold">{{ l.leave_type }}</span>
+                    <span class="status-badge status-{{ l.status|lower }}" style="font-size: 10px;">{{ l.status }}</span>
+                </div>
+                <div class="text-secondary small mb-2">{{ l.start_date }} - {{ l.end_date }}</div>
+                {% if l.status == 'Pending' %}
+                <form action="/leave/cancel/{{ l.leave_id }}" method="POST" class="d-inline" onsubmit="return confirm('Cancel this leave request?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <button type="submit" class="btn btn-sm btn-outline-danger border-0" style="font-size: 11px;">
+                        <i class="bi bi-x-circle me-1"></i> Cancel
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+            {% endfor %}
+            {% if not my_leaves %}
+            <div class="text-center text-secondary py-4 small opacity-50">No history found.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="applyLeaveModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark border-secondary rounded-4">
+            <form action="/leave/apply" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title text-white fw-bold">Apply for Time Off</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small">Leave Type</label>
+                        <select name="leave_type" class="form-select">
+                            <option value="Sick">Sick</option>
+                            <option value="Casual">Casual</option>
+                            <option value="Vacation">Vacation</option>
+                            <option value="Paternity/Maternity">Paternity/Maternity</option>
+                        </select>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label class="form-label text-secondary small">Start Date</label>
+                            <input type="date" name="start_date" class="form-control" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-secondary small">End Date</label>
+                            <input type="date" name="end_date" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small">Reason</label>
+                        <textarea name="reason" class="form-control" rows="3" placeholder="Briefly explain your reason..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="submit" class="btn btn-apply text-white w-100">Submit Application</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

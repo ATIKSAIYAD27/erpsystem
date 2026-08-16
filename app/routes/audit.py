@@ -1,15 +1,16 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from app.db import get_db_connection
 from app.utils import admin_required
+import logging
 
 audit_bp = Blueprint('audit', __name__)
+
+logger = logging.getLogger(__name__)
+
 
 @audit_bp.route('/audit-log')
 @admin_required
 def audit_log():
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
-
     search = request.args.get('search', '')
     start_date = request.args.get('start_date', '')
     end_date = request.args.get('end_date', '')
@@ -46,5 +47,6 @@ def audit_log():
         return render_template('audit.html', logs=logs, search=search,
                                start_date=start_date, end_date=end_date)
     except Exception as e:
-        flash(f'Error loading audit log: {str(e)}', 'danger')
+        logger.error("Audit log error: %s", e)
+        flash('An unexpected error occurred.', 'danger')
         return redirect(url_for('dashboard.dashboard'))

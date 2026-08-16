@@ -1,10 +1,13 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, jsonify
-import pymysql
 from app.utils import login_required, admin_required, manager_or_admin_required, log_audit
+import logging
 
 project_bp = Blueprint('project', __name__)
 
+logger = logging.getLogger(__name__)
+
 from app.db import get_db_connection
+
 
 @project_bp.route('/projects')
 @manager_or_admin_required
@@ -15,7 +18,7 @@ def project_board():
         with conn.cursor() as cursor:
             if search_query:
                 sql = """
-                    SELECT t.task_id, t.title, t.deadline, t.status, 
+                    SELECT t.task_id, t.title, t.deadline, t.status,
                            u.name as assignee, p.name as project_name
                     FROM task t
                     LEFT JOIN users u ON t.assigned_to = u.user_id
@@ -25,7 +28,7 @@ def project_board():
                 cursor.execute(sql, (f'%{search_query}%', f'%{search_query}%', f'%{search_query}%'))
             else:
                 sql = """
-                    SELECT t.task_id, t.title, t.deadline, t.status, 
+                    SELECT t.task_id, t.title, t.deadline, t.status,
                            u.name as assignee, p.name as project_name
                     FROM task t
                     LEFT JOIN users u ON t.assigned_to = u.user_id
@@ -33,13 +36,13 @@ def project_board():
                 """
                 cursor.execute(sql)
             all_tasks = cursor.fetchall()
-            
+
             cursor.execute("SELECT project_id, name FROM project ORDER BY name")
             projects = cursor.fetchall()
-            
+
             cursor.execute("SELECT user_id, name FROM users WHERE role_id != 1")
             users = cursor.fetchall()
-            
+
         conn.close()
 
         kanban = {
@@ -48,7 +51,7 @@ def project_board():
             'Blocked': [],
             'Completed': []
         }
-        
+
         for task in all_tasks:
             if task['status'] in kanban:
                 kanban[task['status']].append(task)
@@ -58,8 +61,10 @@ def project_board():
         return render_template('projects.html', kanban=kanban, projects=projects, users=users)
 
     except Exception as e:
-        flash(f'Database error: {str(e)}', 'danger')
+        logger.error("Project board error: %s", e)
+        flash('An unexpected error occurred.', 'danger')
         return render_template('projects.html', kanban={'Pending':[],'In Progress':[],'Blocked':[],'Completed':[]}, projects=[], users=[])
+
 
 @project_bp.route('/projects/add', methods=['POST'])
 @manager_or_admin_required
@@ -83,9 +88,11 @@ def add_project():
         log_audit(session['user_id'], f"Created project: {name}")
         flash('Project created successfully.', 'success')
     except Exception as e:
-        flash(f'Error creating project: {str(e)}', 'danger')
+        logger.error("Add project error: %s", e)
+        flash('An unexpected error occurred.', 'danger')
 
     return redirect(url_for('project.project_board'))
+
 
 @project_bp.route('/projects/edit/<int:project_id>', methods=['POST'])
 @manager_or_admin_required
@@ -108,11 +115,13 @@ def edit_project(project_id):
         log_audit(session['user_id'], f"Updated project {project_id}: {name}")
         flash('Project updated successfully.', 'success')
     except Exception as e:
-        flash(f'Error updating project: {str(e)}', 'danger')
+        logger.error("Edit project error: %s", e)
+        flash('An unexpected error occurred.', 'danger')
 
     return redirect(url_for('project.project_board'))
 
-@project_bp.route('/projects/delete/<int:project_id>')
+
+@project_bp.route('/projects/delete/<int:project_id>', methods=['POST'])
 @admin_required
 def delete_project(project_id):
     try:
@@ -125,9 +134,11 @@ def delete_project(project_id):
         log_audit(session['user_id'], f"Deleted project {project_id}")
         flash('Project deleted successfully. Tasks have been unlinked.', 'success')
     except Exception as e:
-        flash(f'Error deleting project: {str(e)}', 'danger')
+        logger.error("Delete project error: %s", e)
+        flash('An unexpected error occurred.', 'danger')
 
     return redirect(url_for('project.project_board'))
+
 
 @project_bp.route('/tasks/add', methods=['POST'])
 @manager_or_admin_required
@@ -136,10 +147,10 @@ def add_task():
     project_id = request.form.get('project_id')
     assigned_to = request.form.get('assigned_to')
     deadline = request.form.get('deadline')
-    
+
     if not project_id:
         project_id = None
-        
+
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
@@ -147,19 +158,21 @@ def add_task():
                 INSERT INTO task (project_id, assigned_to, title, deadline, status)
                 VALUES (%s, %s, %s, %s, 'Pending')
             """, (project_id, assigned_to, title, deadline))
-            
+
             if assigned_to:
                 from app.utils import create_notification
                 create_notification(assigned_to, f"New task assigned: {title}. Deadline: {deadline}", 'info')
-                
+
         conn.commit()
         conn.close()
         log_audit(session['user_id'], f"Created task: {title}")
         flash('New task created successfully.', 'success')
     except Exception as e:
-        flash(f'Error creating task: {str(e)}', 'danger')
+        logger.error("Add task error: %s", e)
+        flash('An unexpected error occurred.', 'danger')
 
     return redirect(url_for('project.project_board'))
+
 
 @project_bp.route('/tasks/update_status', methods=['POST'])
 @manager_or_admin_required
@@ -167,25 +180,27 @@ def update_task_status():
     data = request.json
     task_id = data.get('task_id')
     new_status = data.get('status')
-    
+
     if not task_id or not new_status:
         return jsonify({'success': False, 'message': 'Missing data'}), 400
-        
+
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
             cursor.execute("""
-                UPDATE task 
-                SET status = %s 
+                UPDATE task
+                SET status = %s
                 WHERE task_id = %s
             """, (new_status, task_id))
         conn.commit()
         conn.close()
         return jsonify({'success': True})
     except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
+        logger.error("Update task status error: %s", e)
+        return jsonify({'success': False, 'message': 'An error occurred'}), 500
 
-@project_bp.route('/tasks/delete/<int:task_id>')
+
+@project_bp.route('/tasks/delete/<int:task_id>', methods=['POST'])
 @admin_required
 def delete_task(task_id):
     try:
@@ -197,6 +212,7 @@ def delete_task(task_id):
         log_audit(session['user_id'], f"Deleted task {task_id}")
         flash('Task deleted successfully.', 'success')
     except Exception as e:
-        flash(f'Error deleting task: {str(e)}', 'danger')
+        logger.error("Delete task error: %s", e)
+        flash('An unexpected error occurred.', 'danger')
 
     return redirect(url_for('project.project_board'))

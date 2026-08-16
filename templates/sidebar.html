@@ -1,0 +1,194 @@
+<nav class="sidebar" aria-label="Main navigation">
+    <div class="sidebar-brand">
+        <div class="sidebar-brand-icon">
+            <i class="bi bi-building-fill"></i>
+        </div>
+        <div class="sidebar-brand-text">
+            <h3>Nexus ERP</h3>
+        </div>
+    </div>
+
+    <div class="sidebar-nav">
+        <div class="nav-item">
+            <a href="/dashboard" class="nav-link {% if request.path == '/dashboard' %}active{% endif %}">
+                <i class="bi bi-grid-1x2-fill"></i> Overview
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="/my-dashboard" class="nav-link {% if request.path == '/my-dashboard' %}active{% endif %}">
+                <i class="bi bi-person-badge"></i> My Portal
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="/calendar" class="nav-link {% if request.path.startswith('/calendar') %}active{% endif %}">
+                <i class="bi bi-calendar3"></i> Calendar
+            </a>
+        </div>
+
+        <div class="nav-section">Workforce</div>
+        <div class="nav-item">
+            <a href="/employee" class="nav-link {% if request.path.startswith('/employee') %}active{% endif %}">
+                <i class="bi bi-people-fill"></i> Employees
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="/attendance" class="nav-link {% if request.path.startswith('/attendance') %}active{% endif %}">
+                <i class="bi bi-clock-history"></i> Attendance
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="/leaves" class="nav-link {% if request.path.startswith('/leave') %}active{% endif %}">
+                <i class="bi bi-calendar2-week"></i> Leave Portal
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="/payroll" class="nav-link {% if request.path.startswith('/payroll') %}active{% endif %}">
+                <i class="bi bi-cash-stack"></i> Payroll
+            </a>
+        </div>
+
+        <div class="nav-section">Commerce</div>
+        <div class="nav-item">
+            <a href="/sales" class="nav-link {% if request.path.startswith('/sales') and '/pipeline' not in request.path %}active{% endif %}">
+                <i class="bi bi-graph-up-arrow"></i> Sales
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="/sales/pipeline" class="nav-link {% if request.path.startswith('/sales/pipeline') %}active{% endif %}">
+                <i class="bi bi-kanban"></i> Sales Pipeline
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="/quotations" class="nav-link {% if request.path.startswith('/quotations') %}active{% endif %}">
+                <i class="bi bi-file-earmark-text"></i> Quotations
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="/customers" class="nav-link {% if request.path.startswith('/customers') %}active{% endif %}">
+                <i class="bi bi-person-lines-fill"></i> Customers
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="/mail" class="nav-link {% if request.path.startswith('/mail') %}active{% endif %}">
+                <i class="bi bi-envelope-at-fill"></i> Nexus Mail
+                {% if mail_count is defined and mail_count > 0 %}
+                <span class="badge rounded-pill bg-primary ms-auto">{{ mail_count }}</span>
+                {% endif %}
+            </a>
+        </div>
+
+        <div class="nav-section">Inventory</div>
+        <div class="nav-item">
+            <a href="/inventory" class="nav-link {% if request.path.startswith('/inventory') %}active{% endif %}">
+                <i class="bi bi-box-seam-fill"></i> Products
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="/barcodes" class="nav-link {% if request.path.startswith('/barcodes') %}active{% endif %}">
+                <i class="bi bi-upc-scan"></i> Barcodes
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="/suppliers" class="nav-link {% if request.path.startswith('/suppliers') %}active{% endif %}">
+                <i class="bi bi-truck"></i> Suppliers
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="/purchase-orders" class="nav-link {% if request.path.startswith('/purchase-orders') %}active{% endif %}">
+                <i class="bi bi-cart-check"></i> Purchase Orders
+            </a>
+        </div>
+
+        <div class="nav-section">Finance</div>
+        <div class="nav-item">
+            <a href="/finance" class="nav-link {% if request.path == '/finance' %}active{% endif %}">
+                <i class="bi bi-wallet2"></i> Finance Hub
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="/finance/advanced" class="nav-link {% if request.path.startswith('/finance/advanced') %}active{% endif %}">
+                <i class="bi bi-bar-chart-line-fill"></i> P&L Analytics
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="/expense-reports" class="nav-link {% if request.path.startswith('/expense-reports') %}active{% endif %}">
+                <i class="bi bi-file-earmark-bar-graph"></i> Expense Reports
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="/budgets" class="nav-link {% if request.path.startswith('/budgets') %}active{% endif %}">
+                <i class="bi bi-piggy-bank"></i> Budgets
+            </a>
+        </div>
+
+        <div class="nav-section">Projects</div>
+        <div class="nav-item">
+            <a href="/projects" class="nav-link {% if request.path.startswith('/projects') or request.path.startswith('/tasks') %}active{% endif %}">
+                <i class="bi bi-kanban"></i> Projects & Tasks
+            </a>
+        </div>
+
+        <div class="nav-section">Intelligence</div>
+        <div class="nav-item">
+            <a href="/ai-chat" class="nav-link {% if request.path.startswith('/ai-chat') %}active{% endif %}">
+                <i class="bi bi-robot"></i> AI Assistant
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="/ai-analytics" class="nav-link {% if request.path.startswith('/ai-analytics') %}active{% endif %}">
+                <i class="bi bi-lightbulb"></i> AI Analytics
+            </a>
+        </div>
+
+        <div class="nav-section">System</div>
+        <div class="nav-item">
+            <a href="/documents" class="nav-link {% if request.path.startswith('/documents') %}active{% endif %}">
+                <i class="bi bi-folder2-open"></i> Documents
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="/import-export" class="nav-link {% if request.path.startswith('/import-export') %}active{% endif %}">
+                <i class="bi bi-arrow-left-right"></i> Import / Export
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="/risks" class="nav-link {% if request.path.startswith('/risks') %}active{% endif %}">
+                <i class="bi bi-shield-exclamation"></i> Risk Register
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="/workflows" class="nav-link {% if request.path.startswith('/workflows') %}active{% endif %}">
+                <i class="bi bi-diagram-3"></i> Workflows
+            </a>
+        </div>
+        {% if session.get('role_name') == 'Admin' %}
+        <div class="nav-item">
+            <a href="/company-settings" class="nav-link {% if request.path.startswith('/company-settings') %}active{% endif %}">
+                <i class="bi bi-building-gear"></i> Company Settings
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="/audit-log" class="nav-link {% if request.path.startswith('/audit-log') %}active{% endif %}">
+                <i class="bi bi-journal-text"></i> Audit Log
+            </a>
+        </div>
+        {% endif %}
+        <div class="nav-item">
+            <a href="/notifications" class="nav-link {% if request.path.startswith('/notifications') %}active{% endif %}">
+                <i class="bi bi-bell"></i> Alerts
+                {% if notif_count is defined and notif_count > 0 %}
+                <span class="badge rounded-pill bg-danger ms-auto">{{ notif_count }}</span>
+                {% endif %}
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="/settings" class="nav-link {% if request.path == '/settings' %}active{% endif %}">
+                <i class="bi bi-gear-fill"></i> Settings
+            </a>
+        </div>
+    </div>
+
+    <a href="{{ url_for('auth.logout') }}" class="nav-link sidebar-logout" aria-label="Logout">
+        <i class="bi bi-power"></i> Secure Logout
+    </a>
+</nav>

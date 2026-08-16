@@ -1,8 +1,10 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
-import pymysql
-from app.utils import login_required, admin_required
+from app.utils import login_required, manager_or_admin_required, admin_required
+import logging
 
 customer_bp = Blueprint('customer', __name__)
+
+logger = logging.getLogger(__name__)
 
 from app.db import get_db_connection
 
@@ -10,9 +12,6 @@ from app.db import get_db_connection
 @customer_bp.route('/customers')
 @login_required
 def customer_list():
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
-
     search_query = request.args.get('q', '')
     try:
         conn = get_db_connection()
@@ -44,16 +43,14 @@ def customer_list():
         return render_template('customers.html', customers=customers)
 
     except Exception as e:
-        flash(f'Database error: {str(e)}', 'danger')
+        logger.error("Customer list error: %s", e)
+        flash('An unexpected error occurred.', 'danger')
         return render_template('customers.html', customers=[])
 
 
 @customer_bp.route('/customers/add', methods=['POST'])
-@login_required
+@manager_or_admin_required
 def add_customer():
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
-
     name = request.form.get('name')
     email = request.form.get('email')
     phone = request.form.get('phone')
@@ -74,20 +71,16 @@ def add_customer():
         conn.close()
         flash('Customer added successfully.', 'success')
 
-    except pymysql.err.IntegrityError:
-        flash('A customer with this email already exists.', 'danger')
     except Exception as e:
-        flash(f'Error adding customer: {str(e)}', 'danger')
+        logger.error("Add customer error: %s", e)
+        flash('A customer with this email may already exist.', 'danger')
 
     return redirect(url_for('customer.customer_list'))
 
 
 @customer_bp.route('/customers/edit/<int:customer_id>', methods=['POST'])
-@login_required
+@manager_or_admin_required
 def edit_customer(customer_id):
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
-
     name = request.form.get('name')
     email = request.form.get('email')
     phone = request.form.get('phone')
@@ -105,18 +98,15 @@ def edit_customer(customer_id):
         conn.close()
         flash('Customer updated successfully.', 'success')
     except Exception as e:
-        flash(f'Error updating customer: {str(e)}', 'danger')
+        logger.error("Edit customer error: %s", e)
+        flash('An unexpected error occurred.', 'danger')
 
     return redirect(url_for('customer.customer_list'))
 
 
-@customer_bp.route('/customers/delete/<int:customer_id>')
-@login_required
+@customer_bp.route('/customers/delete/<int:customer_id>', methods=['POST'])
 @admin_required
 def delete_customer(customer_id):
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
-
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
@@ -130,6 +120,7 @@ def delete_customer(customer_id):
         conn.close()
         flash('Customer deleted successfully.', 'success')
     except Exception as e:
-        flash(f'Error deleting customer: {str(e)}', 'danger')
+        logger.error("Delete customer error: %s", e)
+        flash('An unexpected error occurred.', 'danger')
 
     return redirect(url_for('customer.customer_list'))

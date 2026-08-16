@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block title %}Self Service - Nexus ERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .btn-download {
+        background: rgba(59, 130, 246, 0.15);
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        color: var(--accent-blue);
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 12px;
+    }
+    .leave-balance-card {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 16px;
+        padding: 18px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="header-section animate-up">
+    <div>
+        <h1 class="page-title">Self Service</h1>
+        <div class="text-secondary">Your attendance, leaves, and payroll at a glance.</div>
+    </div>
+</div>
+
+<!-- Stats Row -->
+<div class="row g-4 mb-5">
+    <div class="col-xl-3 col-lg-6">
+        <div class="stat-card animate-up delay-1">
+            <div class="card-icon-wrapper green-glow">
+                <i class="bi bi-calendar-check"></i>
+            </div>
+            <h2 class="stat-value">{{ present_days }}</h2>
+            <div class="stat-label">Present Days ({{ month_name }})</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-lg-6">
+        <div class="stat-card animate-up delay-2">
+            <div class="card-icon-wrapper orange-glow">
+                <i class="bi bi-calendar-x"></i>
+            </div>
+            <h2 class="stat-value">{{ pending_leaves }}</h2>
+            <div class="stat-label">Pending Leaves</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-lg-6">
+        <div class="stat-card animate-up delay-3">
+            <div class="card-icon-wrapper blue-glow">
+                <i class="bi bi-wallet2"></i>
+            </div>
+            <h2 class="stat-value">{{ total_payroll|indian_currency }}</h2>
+            <div class="stat-label">Total Payroll</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-lg-6">
+        <div class="stat-card animate-up delay-4">
+            <div class="card-icon-wrapper purple-glow">
+                <i class="bi bi-clock-history"></i>
+            </div>
+            <h2 class="stat-value">{{ total_hours }}</h2>
+            <div class="stat-label">Hours Worked</div>
+        </div>
+    </div>
+</div>
+
+<!-- Attendance Table -->
+<div class="glass-card mb-5 animate-up delay-2">
+    <h5 class="fw-bold mb-4">Attendance (Last 30 Days)</h5>
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr class="text-secondary small text-uppercase">
+                    <th>Date</th>
+                    <th>Check In</th>
+                    <th>Check Out</th>
+                    <th>Hours</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in attendance_records %}
+                <tr>
+                    <td class="fw-bold text-white">{{ a.date }}</td>
+                    <td class="text-white">{{ a.check_in or '—' }}</td>
+                    <td class="text-white">{{ a.check_out or '—' }}</td>
+                    <td class="text-white">
+                        {% if a.check_in and a.check_out %}
+                            {% set ci = a.check_in|string %}
+                            {% set co = a.check_out|string %}
+                            {% set ci_parts = ci.split(':') %}
+                            {% set co_parts = co.split(':') %}
+                            {% set ci_seconds = ci_parts[0]|int * 3600 + ci_parts[1]|int * 60 + (ci_parts[2]|int if ci_parts|length > 2 else 0) %}
+                            {% set co_seconds = co_parts[0]|int * 3600 + co_parts[1]|int * 60 + (co_parts[2]|int if co_parts|length > 2 else 0) %}
+                            {% set diff = co_seconds - ci_seconds %}
+                            {% if diff > 0 %}{{ '%.1f'|format(diff / 3600) }}h{% else %}—{% endif %}
+                        {% else %}—{% endif %}
+                    </td>
+                    <td>
+                        <span class="status-badge status-{{ a.status|lower }}">{{ a.status }}</span>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not attendance_records %}
+                <tr>
+                    <td colspan="5" class="text-center py-5 text-secondary">No attendance records found.</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Leave & Payroll Row -->
+<div class="row g-4 mb-5">
+    <!-- Leave Balance -->
+    <div class="col-lg-4 animate-up delay-3">
+        <div class="glass-card h-100">
+            <h5 class="fw-bold mb-4">Leave Balance</h5>
+            {% if leave_balances %}
+            {% for bal in leave_balances %}
+            <div class="leave-balance-card mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="fw-bold text-white">{{ bal.leave_type }}</span>
+                    <span class="text-success fw-bold" style="font-size: 13px;">{{ bal.total_days - bal.used_days }} left</span>
+                </div>
+                <div class="d-flex justify-content-between text-secondary small mb-2">
+                    <span>Total: {{ bal.total_days }}</span>
+                    <span>Used: {{ bal.used_days }}</span>
+                </div>
+                <div class="progress" style="height: 6px;">
+                    <div class="progress-bar bg-success" style="width: {{ ((bal.total_days - bal.used_days) / bal.total_days * 100) if bal.total_days > 0 else 0 }}%"></div>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="text-center text-secondary py-3 small">No leave balance data.</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Leave History -->
+    <div class="col-lg-4 animate-up delay-4">
+        <div class="glass-card h-100">
+            <h5 class="fw-bold mb-4">Leave History</h5>
+            {% if leave_history %}
+            {% for l in leave_history %}
+            <div class="p-3 rounded-4 mb-3" style="background: rgba(255,255,255,0.02); border: 1px solid var(--card-border);">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="fw-bold text-white">{{ l.leave_type }}</span>
+                    <span class="status-badge status-{{ l.status|lower }}" style="font-size: 10px;">{{ l.status }}</span>
+                </div>
+                <div class="text-secondary small">{{ l.start_date }} - {{ l.end_date }}</div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="text-center text-secondary py-3 small">No leave history.</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Payroll History -->
+    <div class="col-lg-4 animate-up delay-5">
+        <div class="glass-card h-100">
+            <h5 class="fw-bold mb-4">Payroll History</h5>
+            {% if payroll_history %}
+            {% for p in payroll_history %}
+            <div class="p-3 rounded-4 mb-3" style="background: rgba(255,255,255,0.02); border: 1px solid var(--card-border);">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="fw-bold text-white">{{ p.month }} {{ p.year }}</span>
+                    <a href="/report/payslip/{{ p.payroll_id }}" class="btn btn-download btn-sm" title="Download Payslip">
+                        <i class="bi bi-file-earmark-pdf"></i>
+                    </a>
+                </div>
+                <div class="text-success fw-bold" style="font-size: 15px;">{{ p.net_pay|indian_currency }}</div>
+                <div class="text-secondary small">Basic: {{ p.basic|indian_number }} | Deductions: {{ p.deductions|indian_number }}</div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="text-center text-secondary py-3 small">No payroll records.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

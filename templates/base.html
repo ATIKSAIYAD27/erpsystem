@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>{% block title %}Nexus ERP{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Hamburger (Mobile) -->
+    <button class="hamburger" id="sidebarToggle" aria-label="Toggle navigation">
+        <i class="bi bi-list"></i>
+    </button>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    {% include 'sidebar.html' %}
+
+    <main class="main-wrapper">
+        {% block content %}{% endblock %}
+    </main>
+
+    {% include 'ai_chat_widget.html' %}
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="{{ url_for('static', filename='js/nexus-core.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+
+    <script>
+    // Service Worker Registration
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/static/js/sw.js').catch(() => {});
+    }
+
+    // Sidebar toggle
+    document.getElementById('sidebarToggle')?.addEventListener('click', function() {
+        document.querySelector('.sidebar').classList.toggle('open');
+        document.getElementById('sidebarOverlay').classList.toggle('open');
+        this.querySelector('i').classList.toggle('bi-list');
+        this.querySelector('i').classList.toggle('bi-x-lg');
+    });
+    document.getElementById('sidebarOverlay')?.addEventListener('click', function() {
+        document.querySelector('.sidebar').classList.remove('open');
+        this.classList.remove('open');
+        const toggle = document.getElementById('sidebarToggle');
+        if (toggle) {
+            toggle.querySelector('i').classList.add('bi-list');
+            toggle.querySelector('i').classList.remove('bi-x-lg');
+        }
+    });
+
+    // Global search
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            const overlay = document.getElementById('searchOverlay');
+            if (overlay) { overlay.classList.toggle('active'); }
+        }
+        if (e.key === 'Escape') {
+            const overlay = document.getElementById('searchOverlay');
+            if (overlay) { overlay.classList.remove('active'); }
+        }
+    });
+
+    // Real-time WebSocket notifications
+    (function() {
+        {% if session.get('user_id') %}
+        const socket = io();
+
+        socket.on('connect', function() {
+            console.log('WebSocket connected');
+        });
+
+        socket.on('new_notification', function(data) {
+            NexusToast.show(data.message, data.type || 'info');
+
+            // Update badge count
+            const badges = document.querySelectorAll('.badge.rounded-pill.bg-danger');
+            badges.forEach(function(badge) {
+                if (badge.closest('.nav-link[href="/notifications"]')) {
+                    let count = parseInt(badge.textContent) || 0;
+                    badge.textContent = count + 1;
+                    badge.style.display = 'inline';
+                }
+            });
+
+            // Play notification sound
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                oscillator.frequency.value = 880;
+                oscillator.type = 'sine';
+                gainNode.gain.value = 0.1;
+                oscillator.start();
+                setTimeout(function() { oscillator.stop(); }, 150);
+            } catch(e) {}
+        });
+
+        socket.on('bulk_action_result', function(data) {
+            NexusToast.show(`${data.user} performed ${data.action} on ${data.count} ${data.module} items`, 'info');
+        });
+
+        // Pin current page to multitask panel
+        NexusMultitask.addTab(window.location.href, document.title);
+        {% endif %}
+    })();
+    </script>
+</body>
+</html>

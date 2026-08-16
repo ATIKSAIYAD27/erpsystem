@@ -1,1 +1,1 @@
-web: python init_db.py && gunicorn --bind 0.0.0.0:$PORT app:app
+web: python init_db.py && python migrate_performance.py && gunicorn --config gunicorn_config.py app:app

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Access Denied - Nexus ERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .error-code {
+        font-size: 140px;
+        opacity: 0.9;
+        background: linear-gradient(135deg, var(--accent-orange), var(--accent-red));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: pulse-error 3s ease-in-out infinite;
+    }
+    @keyframes pulse-error {
+        0%, 100% { opacity: 0.8; }
+        50% { opacity: 1; }
+    }
+    .error-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: rgba(239, 68, 68, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        font-size: 28px;
+        color: var(--accent-red);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-center" style="min-height: 60vh;">
+    <div class="error-card animate-up">
+        <div class="error-icon">
+            <i class="bi bi-shield-lock-fill"></i>
+        </div>
+        <div class="error-code">403</div>
+        <h1 class="error-title">Access Denied</h1>
+        <p class="error-message">You don't have permission to access this page. Please contact your administrator if you believe this is an error.</p>
+        <a href="/dashboard" class="btn-home">
+            <i class="bi bi-house-fill"></i> Back to Dashboard
+        </a>
+        <div class="brand-footer">
+            <div class="brand-footer-icon">
+                <i class="bi bi-building-fill"></i>
+            </div>
+            <span>Nexus ERP</span>
+        </div>
+    </div>
+</div>
+{% endblock %}

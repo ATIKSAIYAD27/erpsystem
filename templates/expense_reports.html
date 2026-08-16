@@ -1,584 +1,197 @@
-<!DOCTYPE html>
-<html lang="en" data-bs-theme="dark">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Expense Reports - Nexus ERP</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        :root {
-            --bg-color: #05070a;
-            --sidebar-bg: #0a0f19;
-            --card-bg: rgba(15, 23, 42, 0.6);
-            --card-border: rgba(255, 255, 255, 0.04);
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --accent-blue: #3b82f6;
-            --accent-purple: #8b5cf6;
-            --accent-green: #10b981;
-            --accent-orange: #f59e0b;
-            --accent-red: #ef4444;
-        }
+{% block title %}Expense Reports - Nexus ERP{% endblock %}
 
-        body {
-            font-family: 'Outfit', sans-serif;
-            background-color: var(--bg-color);
-            background-image:
-                radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.03) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.03) 0%, transparent 40%);
-            color: var(--text-primary);
-            min-height: 100vh;
-            margin: 0;
-            background-attachment: fixed;
-        }
+{% block extra_css %}
+<style>
+    .stat-value { font-size: 30px; }
+    .stat-label { font-size: 13px; }
+    .btn-premium {
+        background: linear-gradient(135deg, var(--accent-blue), #2563eb);
+        border: none;
+        color: white;
+        padding: 10px 22px;
+        border-radius: 14px;
+        font-weight: 700;
+        font-size: 14px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3);
+        transition: 0.3s;
+    }
+    .btn-premium:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 30px rgba(37, 99, 235, 0.5);
+        color: white;
+    }
+    .btn-export {
+        background: linear-gradient(135deg, var(--accent-green), #059669);
+        border: none;
+        color: white;
+        padding: 10px 22px;
+        border-radius: 14px;
+        font-weight: 700;
+        font-size: 14px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
+        transition: 0.3s;
+        text-decoration: none;
+    }
+    .btn-export:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 30px rgba(16, 185, 129, 0.5);
+        color: white;
+    }
+</style>
+{% endblock %}
+    .delay-4 { animation-delay: 0.4s; }
+</style>
+{% endblock %}
 
-        .sidebar {
-            width: 280px;
-            height: 100vh;
-            position: fixed;
-            left: 0;
-            top: 0;
-            background: var(--sidebar-bg);
-            border-right: 1px solid var(--card-border);
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            z-index: 1000;
-            backdrop-filter: blur(25px);
-        }
-
-        .form-control, .form-select {
-            background-color: rgba(15, 23, 42, 0.6) !important;
-            border: 1px solid var(--card-border) !important;
-            color: white !important;
-        }
-        .form-control:focus, .form-select:focus {
-            background-color: rgba(15, 23, 42, 0.8) !important;
-            box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25) !important;
-        }
-        select option {
-            background-color: #0f172a !important;
-            color: white !important;
-        }
-
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 40px;
-        }
-
-        .brand-icon {
-            width: 45px;
-            height: 45px;
-            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            color: white;
-            box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
-        }
-
-        .brand-text h3 {
-            margin: 0;
-            font-weight: 800;
-            font-size: 22px;
-            background: linear-gradient(to right, #fff, #94a3b8);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .nav-item { margin-bottom: 5px; }
-
-        .nav-link {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 14px 20px;
-            border-radius: 12px;
-            color: var(--text-secondary);
-            font-weight: 500;
-            font-size: 15px;
-            transition: all 0.3s ease;
-            text-decoration: none;
-        }
-
-        .nav-link:hover {
-            color: var(--text-primary);
-            background: rgba(255, 255, 255, 0.05);
-            transform: translateX(5px);
-        }
-
-        .nav-link.active {
-            color: white;
-            background: linear-gradient(to right, rgba(59, 130, 246, 0.1), transparent);
-            border-left: 4px solid var(--accent-blue);
-        }
-
-        .nav-link.active i { color: var(--accent-blue); }
-
-        .logout-btn {
-            margin-top: auto;
-            background: rgba(239, 68, 68, 0.1);
-            color: #ef4444;
-            border: 1px solid rgba(239, 68, 68, 0.2);
-        }
-
-        .logout-btn:hover {
-            background: #ef4444;
-            color: white;
-            transform: translateY(-2px);
-        }
-
-        .main-wrapper {
-            margin-left: 280px;
-            padding: 40px;
-        }
-
-        .header-section {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 40px;
-        }
-
-        .page-title {
-            font-size: 32px;
-            font-weight: 800;
-            margin: 0;
-            background: linear-gradient(to right, #fff, #94a3b8);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .page-subtitle {
-            color: var(--text-secondary);
-            font-size: 16px;
-            margin-top: 5px;
-        }
-
-        .user-profile {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            background: var(--card-bg);
-            padding: 8px 20px;
-            border-radius: 50px;
-            border: 1px solid var(--card-border);
-            backdrop-filter: blur(10px);
-        }
-
-        .avatar {
-            width: 42px;
-            height: 42px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 800;
-            color: white;
-            box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
-        }
-
-        .glass-card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 28px;
-            padding: 30px;
-            backdrop-filter: blur(15px);
-        }
-
-        .stat-card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 28px;
-            padding: 28px;
-            backdrop-filter: blur(15px);
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-8px);
-            border-color: rgba(59, 130, 246, 0.3);
-            background: rgba(30, 41, 59, 0.9);
-        }
-
-        .card-icon-wrapper {
-            width: 54px;
-            height: 54px;
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            margin-bottom: 20px;
-        }
-
-        .blue-glow { background: rgba(59, 130, 246, 0.1); color: var(--accent-blue); }
-        .green-glow { background: rgba(16, 185, 129, 0.1); color: var(--accent-green); }
-        .orange-glow { background: rgba(245, 158, 11, 0.1); color: var(--accent-orange); }
-        .red-glow { background: rgba(239, 68, 68, 0.1); color: var(--accent-red); }
-
-        .stat-value {
-            font-size: 30px;
-            font-weight: 800;
-            color: white;
-            margin-bottom: 4px;
-        }
-
-        .stat-label {
-            color: var(--text-secondary);
-            font-weight: 500;
-            font-size: 13px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .table { color: var(--text-primary); margin-bottom: 0; }
-        .table thead th {
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--text-secondary);
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 11px;
-            letter-spacing: 1.5px;
-            border-bottom: 1px solid var(--card-border);
-            padding: 16px;
-        }
-        .table tbody td {
-            background: transparent;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-            padding: 18px 16px;
-            font-size: 14px;
-            vertical-align: middle;
-            color: #cbd5e1;
-        }
-        .table tbody tr:hover td { background: rgba(255, 255, 255, 0.02); }
-
-        .btn-premium {
-            background: linear-gradient(135deg, var(--accent-blue), #2563eb);
-            border: none;
-            color: white;
-            padding: 10px 22px;
-            border-radius: 14px;
-            font-weight: 700;
-            font-size: 14px;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3);
-            transition: 0.3s;
-        }
-        .btn-premium:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 30px rgba(37, 99, 235, 0.5);
-            color: white;
-        }
-
-        .btn-export {
-            background: linear-gradient(135deg, var(--accent-green), #059669);
-            border: none;
-            color: white;
-            padding: 10px 22px;
-            border-radius: 14px;
-            font-weight: 700;
-            font-size: 14px;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
-            transition: 0.3s;
-            text-decoration: none;
-        }
-        .btn-export:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 30px rgba(16, 185, 129, 0.5);
-            color: white;
-        }
-
-        @keyframes fadeSlideUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-up { animation: fadeSlideUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        .delay-1 { animation-delay: 0.1s; }
-        .delay-2 { animation-delay: 0.2s; }
-        .delay-3 { animation-delay: 0.3s; }
-        .delay-4 { animation-delay: 0.4s; }
-    </style>
-</head>
-
-<body>
-    <!-- Sidebar -->
-    <nav class="sidebar">
-        <div class="brand">
-            <div class="brand-icon">
-                <i class="bi bi-hexagon-fill"></i>
-            </div>
-            <div class="brand-text">
-                <h3>Nexus ERP</h3>
+{% block content %}
+    <div class="header-section animate-up">
+        <div>
+            <h1 class="page-title">Expense Reports & Analytics</h1>
+            <div class="page-subtitle">Financial insights and expense breakdown by category</div>
+        </div>
+        <div class="d-flex align-items-center gap-4">
+            {% include 'header_search.html' %}
+            <div class="user-profile">
+                <div class="avatar">{{ session.get('name', 'A')[0] | upper }}</div>
+                <div class="user-profile-info">
+                    <div class="user-profile-name">{{ session.get('name', 'Admin User') }}</div>
+                    <div class="user-profile-role">{{ session.get('role_name', 'System Admin') }}</div>
+                </div>
             </div>
         </div>
+    </div>
 
-        <div class="nav-item">
-            <a href="/dashboard" class="nav-link">
-                <i class="bi bi-grid-1x2-fill"></i> Overview
-            </a>
-        </div>
-        <div class="nav-item">
-            <a href="/employee" class="nav-link">
-                <i class="bi bi-people-fill"></i> Workforce
-            </a>
-        </div>
-        <div class="nav-item">
-            <a href="/attendance" class="nav-link">
-                <i class="bi bi-clock-history"></i> Attendance
-            </a>
-        </div>
-        <div class="nav-item">
-            <a href="/leaves" class="nav-link">
-                <i class="bi bi-calendar2-week"></i> Leave Portal
-            </a>
-        </div>
-        <div class="nav-item">
-            <a href="/payroll" class="nav-link">
-                <i class="bi bi-cash-stack"></i> Payroll
-            </a>
-        </div>
-        <div class="nav-item">
-            <a href="/mail" class="nav-link">
-                <i class="bi bi-envelope-at-fill"></i> Nexus Mail
-                {% if mail_count > 0 %}
-                <span class="badge rounded-pill bg-primary ms-auto" style="font-size: 10px;">{{ mail_count }}</span>
-                {% endif %}
-            </a>
-        </div>
-        <div class="nav-item">
-            <a href="/finance" class="nav-link">
-                <i class="bi bi-wallet2"></i> Finance Hub
-            </a>
-        </div>
-        <div class="nav-item">
-            <a href="/inventory" class="nav-link">
-                <i class="bi bi-box-seam-fill"></i> Inventory
-            </a>
-        </div>
-        <div class="nav-item">
-            <a href="/sales" class="nav-link">
-                <i class="bi bi-graph-up-arrow"></i> Sales & CRM
-            </a>
-        </div>
-        <div class="nav-item">
-            <a href="/projects" class="nav-link">
-                <i class="bi bi-kanban"></i> Projects
-            </a>
-        </div>
-        <div class="nav-item">
-            <a href="/customers" class="nav-link">
-                <i class="bi bi-person-badge"></i> Customers
-            </a>
-        </div>
-        <div class="nav-item">
-            <a href="/suppliers" class="nav-link">
-                <i class="bi bi-truck"></i> Suppliers
-            </a>
-        </div>
-        <div class="nav-item">
-            <a href="/purchase-orders" class="nav-link">
-                <i class="bi bi-receipt"></i> Purchase Orders
-            </a>
-        </div>
-        <div class="nav-item">
-            <a href="/expense-reports" class="nav-link active">
-                <i class="bi bi-file-earmark-bar-graph"></i> Expense Reports
-            </a>
-        </div>
-        {% if session.get('role_name') == 'Admin' %}
-        <div class="nav-item">
-            <a href="/company-settings" class="nav-link">
-                <i class="bi bi-building"></i> Company Settings
-            </a>
-        </div>
-        <div class="nav-item">
-            <a href="/audit-log" class="nav-link">
-                <i class="bi bi-journal-text"></i> Audit Log
-            </a>
-        </div>
-        {% endif %}
-        <div class="nav-item">
-            <a href="/notifications" class="nav-link">
-                <i class="bi bi-bell"></i> Alerts
-                {% if notif_count > 0 %}
-                <span class="badge rounded-pill bg-danger ms-auto" style="font-size: 10px;">{{ notif_count }}</span>
-                {% endif %}
-            </a>
-        </div>
-        <div class="nav-item">
-            <a href="/settings" class="nav-link">
-                <i class="bi bi-gear-fill"></i> Settings
-            </a>
-        </div>
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
 
-        <a href="{{ url_for('auth.logout') }}" class="nav-link logout-btn">
-            <i class="bi bi-power"></i> Secure Logout
-        </a>
-    </nav>
-
-    <!-- Main Content -->
-    <main class="main-wrapper">
-        <div class="header-section animate-up">
+    <!-- Date Range Filter -->
+    <div class="glass-card mb-4 animate-up delay-1">
+        <form action="{{ url_for('expense_report.expense_reports') }}" method="GET" class="d-flex align-items-end gap-3 flex-wrap">
             <div>
-                <h1 class="page-title">Expense Reports & Analytics</h1>
-                <div class="page-subtitle">Financial insights and expense breakdown by category</div>
+                <label class="form-label mb-1" style="font-size: 12px; color: var(--text-secondary);">Start Date</label>
+                <input type="date" class="form-control" name="start_date" value="{{ start_date or '' }}">
             </div>
-            <div class="d-flex align-items-center gap-4">
-                {% include 'header_search.html' %}
-                <div class="user-profile">
-                    <div class="avatar">{{ session.get('name', 'A')[0] | upper }}</div>
-                    <div style="padding-right: 10px;">
-                        <div style="font-size: 14px; font-weight: 700; color: white;">{{ session.get('name', 'Admin User') }}</div>
-                        <div style="font-size: 12px; color: var(--text-secondary);">{{ session.get('role_name', 'System Admin') }}</div>
-                    </div>
+            <div>
+                <label class="form-label mb-1" style="font-size: 12px; color: var(--text-secondary);">End Date</label>
+                <input type="date" class="form-control" name="end_date" value="{{ end_date or '' }}">
+            </div>
+            <button type="submit" class="btn btn-premium">
+                <i class="bi bi-funnel"></i> Filter
+            </button>
+            <a href="{{ url_for('expense_report.export_expenses', start_date=start_date or '', end_date=end_date or '') }}" class="btn-export">
+                <i class="bi bi-download"></i> Export CSV
+            </a>
+        </form>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-xl-3 col-lg-6">
+            <div class="stat-card animate-up delay-1">
+                <div class="card-icon-wrapper green-glow">
+                    <i class="bi bi-currency-rupee"></i>
                 </div>
+                <h2 class="stat-value">{{ (total_revenue or 0)|indian_currency }}</h2>
+                <div class="stat-label">Total Revenue</div>
             </div>
         </div>
-
-        <!-- Flash Messages -->
-        {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-        {% for category, message in messages %}
-        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-        {% endfor %}
-        {% endif %}
-        {% endwith %}
-
-        <!-- Date Range Filter -->
-        <div class="glass-card mb-4 animate-up delay-1">
-            <form action="{{ url_for('expense_report.expense_reports') }}" method="GET" class="d-flex align-items-end gap-3 flex-wrap">
-                <div>
-                    <label class="form-label mb-1" style="font-size: 12px; color: var(--text-secondary);">Start Date</label>
-                    <input type="date" class="form-control" name="start_date" value="{{ start_date or '' }}">
+        <div class="col-xl-3 col-lg-6">
+            <div class="stat-card animate-up delay-2">
+                <div class="card-icon-wrapper red-glow">
+                    <i class="bi bi-arrow-down-circle"></i>
                 </div>
-                <div>
-                    <label class="form-label mb-1" style="font-size: 12px; color: var(--text-secondary);">End Date</label>
-                    <input type="date" class="form-control" name="end_date" value="{{ end_date or '' }}">
-                </div>
-                <button type="submit" class="btn btn-premium">
-                    <i class="bi bi-funnel"></i> Filter
-                </button>
-                <a href="{{ url_for('expense_report.export_expenses', start_date=start_date or '', end_date=end_date or '') }}" class="btn-export">
-                    <i class="bi bi-download"></i> Export CSV
-                </a>
-            </form>
-        </div>
-
-        <!-- Stat Cards -->
-        <div class="row g-4 mb-4">
-            <div class="col-xl-3 col-lg-6">
-                <div class="stat-card animate-up delay-1">
-                    <div class="card-icon-wrapper green-glow">
-                        <i class="bi bi-currency-rupee"></i>
-                    </div>
-                    <h2 class="stat-value">{{ (total_revenue or 0)|indian_currency }}</h2>
-                    <div class="stat-label">Total Revenue</div>
-                </div>
-            </div>
-            <div class="col-xl-3 col-lg-6">
-                <div class="stat-card animate-up delay-2">
-                    <div class="card-icon-wrapper red-glow">
-                        <i class="bi bi-arrow-down-circle"></i>
-                    </div>
-                    <h2 class="stat-value">{{ (total_expenses or 0)|indian_currency }}</h2>
-                    <div class="stat-label">Total Expenses</div>
-                </div>
-            </div>
-            <div class="col-xl-3 col-lg-6">
-                <div class="stat-card animate-up delay-3">
-                    <div class="card-icon-wrapper blue-glow">
-                        <i class="bi bi-people-fill"></i>
-                    </div>
-                    <h2 class="stat-value">{{ (total_payroll or 0)|indian_currency }}</h2>
-                    <div class="stat-label">Total Payroll</div>
-                </div>
-            </div>
-            <div class="col-xl-3 col-lg-6">
-                <div class="stat-card animate-up delay-4">
-                    <div class="card-icon-wrapper orange-glow">
-                        <i class="bi bi-graph-up-arrow"></i>
-                    </div>
-                    <h2 class="stat-value">{{ (net_profit or 0)|indian_currency }}</h2>
-                    <div class="stat-label">Net Profit</div>
-                </div>
+                <h2 class="stat-value">{{ (total_expenses or 0)|indian_currency }}</h2>
+                <div class="stat-label">Total Expenses</div>
             </div>
         </div>
-
-        <!-- Category Breakdown -->
-        <div class="glass-card animate-up" style="animation-delay: 0.3s;">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h5 class="text-white fw-bold mb-0"><i class="bi bi-pie-chart me-2"></i> Category Breakdown</h5>
-                <div class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-2 rounded-pill">
-                    <i class="bi bi-calendar3 me-1"></i> {{ start_date or 'All Time' }} to {{ end_date or 'Present' }}
+        <div class="col-xl-3 col-lg-6">
+            <div class="stat-card animate-up delay-3">
+                <div class="card-icon-wrapper blue-glow">
+                    <i class="bi bi-people-fill"></i>
                 </div>
+                <h2 class="stat-value">{{ (total_payroll or 0)|indian_currency }}</h2>
+                <div class="stat-label">Total Payroll</div>
             </div>
-            <div class="table-responsive">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Category</th>
-                            <th>Amount</th>
-                            <th>% of Total</th>
-                            <th class="text-end">Distribution</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% if categories %}
-                        {% for cat in categories %}
-                        <tr>
-                            <td class="text-white fw-bold">
-                                <i class="bi bi-tag me-2 text-primary"></i> {{ cat.category }}
-                            </td>
-                            <td class="fw-bold">{{ cat.amount|indian_currency }}</td>
-                            <td>
-                                <div class="d-flex align-items-center gap-2">
-                                    <div class="progress flex-grow-1" style="height: 6px; background: rgba(255,255,255,0.05);">
-                                        <div class="progress-bar bg-primary" style="width: {{ cat.percentage }}%"></div>
-                                    </div>
-                                    <span class="text-secondary small">{{ "{:.1f}".format(cat.percentage) }}%</span>
+        </div>
+        <div class="col-xl-3 col-lg-6">
+            <div class="stat-card animate-up delay-4">
+                <div class="card-icon-wrapper orange-glow">
+                    <i class="bi bi-graph-up-arrow"></i>
+                </div>
+                <h2 class="stat-value">{{ (net_profit or 0)|indian_currency }}</h2>
+                <div class="stat-label">Net Profit</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Breakdown -->
+    <div class="glass-card animate-up" style="animation-delay: 0.3s;">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h5 class="text-white fw-bold mb-0"><i class="bi bi-pie-chart me-2"></i> Category Breakdown</h5>
+            <div class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-2 rounded-pill">
+                <i class="bi bi-calendar3 me-1"></i> {{ start_date or 'All Time' }} to {{ end_date or 'Present' }}
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Amount</th>
+                        <th>% of Total</th>
+                        <th class="text-end">Distribution</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if categories %}
+                    {% for cat in categories %}
+                    <tr>
+                        <td class="text-white fw-bold">
+                            <i class="bi bi-tag me-2 text-primary"></i> {{ cat.category }}
+                        </td>
+                        <td class="fw-bold">{{ cat.amount|indian_currency }}</td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="progress flex-grow-1" style="height: 6px; background: rgba(255,255,255,0.05);">
+                                    <div class="progress-bar bg-primary" style="width: {{ cat.percentage }}%"></div>
                                 </div>
-                            </td>
-                            <td class="text-end">
-                                <span class="badge bg-{{ 'success' if cat.percentage < 20 else 'warning' if cat.percentage < 50 else 'danger' }} bg-opacity-10 text-{{ 'success' if cat.percentage < 20 else 'warning' if cat.percentage < 50 else 'danger' }}">
-                                    {{ 'Low' if cat.percentage < 20 else 'Medium' if cat.percentage < 50 else 'High' }}
-                                </span>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                        {% else %}
-                        <tr>
-                            <td colspan="4" class="text-center py-5 text-secondary">
-                                <i class="bi bi-inbox fs-1 opacity-25 d-block mb-3"></i>
-                                No expense data available for the selected period.
-                            </td>
-                        </tr>
-                        {% endif %}
-                    </tbody>
-                </table>
-            </div>
+                                <span class="text-secondary small">{{ "{:.1f}".format(cat.percentage) }}%</span>
+                            </div>
+                        </td>
+                        <td class="text-end">
+                            <span class="badge bg-{{ 'success' if cat.percentage < 20 else 'warning' if cat.percentage < 50 else 'danger' }} bg-opacity-10 text-{{ 'success' if cat.percentage < 20 else 'warning' if cat.percentage < 50 else 'danger' }}">
+                                {{ 'Low' if cat.percentage < 20 else 'Medium' if cat.percentage < 50 else 'High' }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center py-5 text-secondary">
+                            <i class="bi bi-inbox fs-1 opacity-25 d-block mb-3"></i>
+                            No expense data available for the selected period.
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
         </div>
-    </main>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+    </div>
+{% endblock %}

@@ -18,42 +18,43 @@ class DataContext:
     def get_sales_context(self, months=6):
         try:
             cursor = self._connect()
-            cursor.execute("""
-                SELECT DATE_FORMAT(sale_date, '%%Y-%%m') as month,
-                       SUM(total_amount) as revenue,
-                       COUNT(*) as sale_count,
-                       SUM(quantity) as units_sold
-                FROM sale
-                WHERE sale_date >= DATE_SUB(CURDATE(), INTERVAL %s MONTH)
-                GROUP BY DATE_FORMAT(sale_date, '%%Y-%%m')
-                ORDER BY month
-            """, (months,))
-            monthly_sales = cursor.fetchall()
+            try:
+                cursor.execute("""
+                    SELECT DATE_FORMAT(sale_date, '%%Y-%%m') as month,
+                           SUM(total_amount) as revenue,
+                           COUNT(*) as sale_count,
+                           SUM(quantity) as units_sold
+                    FROM sale
+                    WHERE sale_date >= DATE_SUB(CURDATE(), INTERVAL %s MONTH)
+                    GROUP BY DATE_FORMAT(sale_date, '%%Y-%%m')
+                    ORDER BY month
+                """, (months,))
+                monthly_sales = cursor.fetchall()
 
-            cursor.execute("""
-                SELECT p.name, SUM(s.quantity) as total_qty, SUM(s.total_amount) as total_revenue
-                FROM sale s JOIN product p ON s.product_id = p.product_id
-                GROUP BY p.name ORDER BY total_revenue DESC LIMIT 10
-            """)
-            top_products = cursor.fetchall()
+                cursor.execute("""
+                    SELECT p.name, SUM(s.quantity) as total_qty, SUM(s.total_amount) as total_revenue
+                    FROM sale s JOIN product p ON s.product_id = p.product_id
+                    GROUP BY p.name ORDER BY total_revenue DESC LIMIT 10
+                """)
+                top_products = cursor.fetchall()
 
-            cursor.execute("""
-                SELECT c.name, SUM(s.total_amount) as total_spent, COUNT(*) as order_count
-                FROM sale s JOIN customer c ON s.customer_id = c.customer_id
-                GROUP BY c.name ORDER BY total_spent DESC LIMIT 10
-            """)
-            top_customers = cursor.fetchall()
+                cursor.execute("""
+                    SELECT c.name, SUM(s.total_amount) as total_spent, COUNT(*) as order_count
+                    FROM sale s JOIN customer c ON s.customer_id = c.customer_id
+                    GROUP BY c.name ORDER BY total_spent DESC LIMIT 10
+                """)
+                top_customers = cursor.fetchall()
 
-            cursor.execute("SELECT SUM(total_amount) as total FROM sale")
-            total_revenue = cursor.fetchone()['total'] or 0
+                cursor.execute("SELECT SUM(total_amount) as total FROM sale")
+                total_revenue = cursor.fetchone()['total'] or 0
 
-            cursor.execute("""
-                SELECT SUM(total_amount) as today_revenue FROM sale
-                WHERE sale_date = CURDATE()
-            """)
-            today_revenue = cursor.fetchone()['today_revenue'] or 0
-
-            self._close()
+                cursor.execute("""
+                    SELECT SUM(total_amount) as today_revenue FROM sale
+                    WHERE sale_date = CURDATE()
+                """)
+                today_revenue = cursor.fetchone()['today_revenue'] or 0
+            finally:
+                self._close()
             return {
                 'monthly_sales': monthly_sales,
                 'top_products': top_products,
@@ -68,35 +69,36 @@ class DataContext:
     def get_expense_context(self, months=6):
         try:
             cursor = self._connect()
-            cursor.execute("""
-                SELECT DATE_FORMAT(date, '%%Y-%%m') as month,
-                       category, SUM(amount) as total, COUNT(*) as count
-                FROM expense
-                WHERE date >= DATE_SUB(CURDATE(), INTERVAL %s MONTH)
-                GROUP BY DATE_FORMAT(date, '%%Y-%%m'), category
-                ORDER BY month, total DESC
-            """, (months,))
-            monthly_expenses = cursor.fetchall()
+            try:
+                cursor.execute("""
+                    SELECT DATE_FORMAT(date, '%%Y-%%m') as month,
+                           category, SUM(amount) as total, COUNT(*) as count
+                    FROM expense
+                    WHERE date >= DATE_SUB(CURDATE(), INTERVAL %s MONTH)
+                    GROUP BY DATE_FORMAT(date, '%%Y-%%m'), category
+                    ORDER BY month, total DESC
+                """, (months,))
+                monthly_expenses = cursor.fetchall()
 
-            cursor.execute("""
-                SELECT category, SUM(amount) as total, AVG(amount) as avg_amount,
-                       MAX(amount) as max_amount, COUNT(*) as count
-                FROM expense
-                GROUP BY category ORDER BY total DESC
-            """)
-            category_breakdown = cursor.fetchall()
+                cursor.execute("""
+                    SELECT category, SUM(amount) as total, AVG(amount) as avg_amount,
+                           MAX(amount) as max_amount, COUNT(*) as count
+                    FROM expense
+                    GROUP BY category ORDER BY total DESC
+                """)
+                category_breakdown = cursor.fetchall()
 
-            cursor.execute("SELECT SUM(amount) as total FROM expense")
-            total_expenses = cursor.fetchone()['total'] or 0
+                cursor.execute("SELECT SUM(amount) as total FROM expense")
+                total_expenses = cursor.fetchone()['total'] or 0
 
-            cursor.execute("""
-                SELECT e.* FROM expense e
-                WHERE e.amount > (SELECT AVG(amount) * 2 FROM expense)
-                ORDER BY e.amount DESC LIMIT 5
-            """)
-            anomalies = cursor.fetchall()
-
-            self._close()
+                cursor.execute("""
+                    SELECT e.* FROM expense e
+                    WHERE e.amount > (SELECT AVG(amount) * 2 FROM expense)
+                    ORDER BY e.amount DESC LIMIT 5
+                """)
+                anomalies = cursor.fetchall()
+            finally:
+                self._close()
             return {
                 'monthly_expenses': monthly_expenses,
                 'category_breakdown': category_breakdown,
@@ -110,28 +112,29 @@ class DataContext:
     def get_inventory_context(self):
         try:
             cursor = self._connect()
-            cursor.execute("""
-                SELECT product_id, name, sku, quantity, reorder_level, unit_price,
-                       (quantity * unit_price) as stock_value,
-                       CASE WHEN quantity <= reorder_level THEN 'LOW' ELSE 'OK' END as status
-                FROM product ORDER BY quantity ASC
-            """)
-            products = cursor.fetchall()
+            try:
+                cursor.execute("""
+                    SELECT product_id, name, sku, quantity, reorder_level, unit_price,
+                           (quantity * unit_price) as stock_value,
+                           CASE WHEN quantity <= reorder_level THEN 'LOW' ELSE 'OK' END as status
+                    FROM product ORDER BY quantity ASC
+                """)
+                products = cursor.fetchall()
 
-            cursor.execute("""
-                SELECT p.name, COALESCE(SUM(s.quantity), 0) as sold_30d
-                FROM product p
-                LEFT JOIN sale s ON p.product_id = s.product_id AND s.sale_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
-                GROUP BY p.name ORDER BY sold_30d DESC LIMIT 10
-            """)
-            demand_30d = cursor.fetchall()
+                cursor.execute("""
+                    SELECT p.name, COALESCE(SUM(s.quantity), 0) as sold_30d
+                    FROM product p
+                    LEFT JOIN sale s ON p.product_id = s.product_id AND s.sale_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+                    GROUP BY p.name ORDER BY sold_30d DESC LIMIT 10
+                """)
+                demand_30d = cursor.fetchall()
 
-            cursor.execute("SELECT SUM(quantity * unit_price) as total_value FROM product")
-            total_value = cursor.fetchone()['total_value'] or 0
+                cursor.execute("SELECT SUM(quantity * unit_price) as total_value FROM product")
+                total_value = cursor.fetchone()['total_value'] or 0
 
-            low_stock = [p for p in products if p['status'] == 'LOW']
-
-            self._close()
+                low_stock = [p for p in products if p['status'] == 'LOW']
+            finally:
+                self._close()
             return {
                 'products': products,
                 'demand_30d': demand_30d,
@@ -146,37 +149,38 @@ class DataContext:
     def get_hr_context(self):
         try:
             cursor = self._connect()
-            cursor.execute("SELECT COUNT(*) as total FROM employee")
-            total_employees = cursor.fetchone()['total']
+            try:
+                cursor.execute("SELECT COUNT(*) as total FROM employee")
+                total_employees = cursor.fetchone()['total']
 
-            cursor.execute("""
-                SELECT DATE_FORMAT(date, '%%Y-%%m') as month,
-                       COUNT(DISTINCT emp_id) as present_count
-                FROM attendance
-                WHERE date >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH)
-                GROUP BY DATE_FORMAT(date, '%%Y-%%m')
-                ORDER BY month
-            """)
-            attendance_trend = cursor.fetchall()
+                cursor.execute("""
+                    SELECT DATE_FORMAT(date, '%%Y-%%m') as month,
+                           COUNT(DISTINCT emp_id) as present_count
+                    FROM attendance
+                    WHERE date >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH)
+                    GROUP BY DATE_FORMAT(date, '%%Y-%%m')
+                    ORDER BY month
+                """)
+                attendance_trend = cursor.fetchall()
 
-            cursor.execute("""
-                SELECT status, COUNT(*) as count FROM leaves
-                WHERE month(applied_date) = month(CURDATE())
-                GROUP BY status
-            """)
-            leave_summary = cursor.fetchall()
+                cursor.execute("""
+                    SELECT status, COUNT(*) as count FROM leaves
+                    WHERE month(created_at) = month(CURDATE())
+                    GROUP BY status
+                """)
+                leave_summary = cursor.fetchall()
 
-            cursor.execute("""
-                SELECT e.emp_id, u.name, e.department, e.job_title
-                FROM employee e JOIN users u ON e.user_id = u.user_id
-                LIMIT 20
-            """)
-            employees = cursor.fetchall()
+                cursor.execute("""
+                    SELECT e.emp_id, u.name, e.department, e.job_title
+                    FROM employee e JOIN users u ON e.user_id = u.user_id
+                    LIMIT 20
+                """)
+                employees = cursor.fetchall()
 
-            cursor.execute("SELECT SUM(net_pay) as total FROM payroll WHERE month = month(CURDATE())")
-            current_payroll = cursor.fetchone()['total'] or 0
-
-            self._close()
+                cursor.execute("SELECT SUM(net_pay) as total FROM payroll WHERE month = month(CURDATE())")
+                current_payroll = cursor.fetchone()['total'] or 0
+            finally:
+                self._close()
             return {
                 'total_employees': total_employees,
                 'attendance_trend': attendance_trend,

@@ -1,5 +1,4 @@
-from flask import Blueprint, send_file, session, abort
-import pymysql
+from flask import Blueprint, send_file, session, abort, render_template
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
@@ -7,58 +6,25 @@ from reportlab.lib.units import mm
 from io import BytesIO
 import datetime
 import re
-from app.utils import indian_currency
+import logging
+from app.utils import indian_currency, login_required, amount_in_words
 
 reports_bp = Blueprint('reports', __name__)
+
+logger = logging.getLogger(__name__)
 
 from app.db import get_db_connection
 
 
-def amount_in_words(amount):
-    ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven',
-            'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen',
-            'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen']
-    tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty',
-            'Seventy', 'Eighty', 'Ninety']
-
-    if amount == 0:
-        return "Indian Rupee Zero Only"
-
-    def num_to_words(n):
-        if n == 0:
-            return ''
-        elif n < 20:
-            return ones[n]
-        elif n < 100:
-            return tens[n // 10] + (' ' + ones[n % 10] if n % 10 else '')
-        elif n < 1000:
-            return ones[n // 100] + ' Hundred' + (' and ' + num_to_words(n % 100) if n % 100 else '')
-        elif n < 100000:
-            return num_to_words(n // 1000) + ' Thousand' + (' ' + num_to_words(n % 1000) if n % 1000 else '')
-        elif n < 10000000:
-            return num_to_words(n // 100000) + ' Lakh' + (' ' + num_to_words(n % 100000) if n % 100000 else '')
-        else:
-            return num_to_words(n // 10000000) + ' Crore' + (' ' + num_to_words(n % 10000000) if n % 10000000 else '')
-
-    int_part = int(amount)
-    dec_part = round((amount - int_part) * 100)
-    result = "Indian Rupee " + num_to_words(int_part)
-    if dec_part > 0:
-        result += " and " + num_to_words(dec_part) + " Paise"
-    result += " Only"
-    return result
-
-
 @reports_bp.route('/report/invoice/<int:sale_id>')
+@login_required
 def generate_invoice(sale_id):
-    if 'user_id' not in session:
-        abort(401)
-
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
             cursor.execute("""
                 SELECT s.*, c.name as customer_name, c.email as customer_email,
+                       c.phone as customer_phone, c.address as customer_address,
                        p.name as product_name, p.unit_price
                 FROM sale s
                 JOIN customer c ON s.customer_id = c.customer_id
@@ -67,8 +33,16 @@ def generate_invoice(sale_id):
             """, (sale_id,))
             sale = cursor.fetchone()
 
+            cursor.execute("SELECT * FROM company_settings LIMIT 1")
+            company = cursor.fetchone()
+
         if not sale:
             return "Invoice not found", 404
+
+        company_name = company.get('company_name', 'Nexus ERP') if company else 'Nexus ERP'
+        company_addr = company.get('address', '123 Business Avenue, Tech City, India') if company else '123 Business Avenue, Tech City, India'
+        company_phone = company.get('phone', '+91 98765 43210') if company else '+91 98765 43210'
+        company_email = company.get('email', '') if company else ''
 
         buffer = BytesIO()
         p = canvas.Canvas(buffer, pagesize=A4)
@@ -76,12 +50,14 @@ def generate_invoice(sale_id):
 
         p.setFont("Helvetica-Bold", 24)
         p.setFillColor(colors.HexColor("#3b82f6"))
-        p.drawString(50, height - 80, "NEXUS ERP")
+        p.drawString(50, height - 80, company_name.upper())
 
         p.setFont("Helvetica", 10)
         p.setFillColor(colors.black)
-        p.drawString(50, height - 100, "123 Business Avenue, Tech City, India")
-        p.drawString(50, height - 115, "Contact: +91 98765 43210")
+        p.drawString(50, height - 100, company_addr)
+        p.drawString(50, height - 115, f"Contact: {company_phone}")
+        if company_email:
+            p.drawString(50, height - 130, f"Email: {company_email}")
 
         p.setFont("Helvetica-Bold", 16)
         p.drawString(400, height - 80, "INVOICE")
@@ -129,14 +105,13 @@ def generate_invoice(sale_id):
                          download_name=f"Invoice_INV-{sale_id}.pdf",
                          mimetype='application/pdf')
     except Exception as e:
-        return f"Error: {str(e)}", 500
+        logger.error("Generate invoice error: %s", e)
+        return "An error occurred generating the invoice", 500
 
 
 @reports_bp.route('/report/payslip/<int:payroll_id>')
+@login_required
 def generate_payslip(payroll_id):
-    if 'user_id' not in session:
-        abort(401)
-
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
@@ -172,7 +147,6 @@ def generate_payslip(payroll_id):
 
         month_name = datetime.date(1900, pay['month'], 1).strftime('%B')
         pay_date = datetime.date(pay['year'], pay['month'], 28).strftime('%d/%m/%Y')
-        join_date = "N/A"
 
         buffer = BytesIO()
         c = canvas.Canvas(buffer, pagesize=A4)
@@ -184,9 +158,7 @@ def generate_payslip(payroll_id):
         grey_bg = colors.HexColor("#f1f5f9")
         green_bg = colors.HexColor("#ecfdf5")
         green_border = colors.HexColor("#10b981")
-        light_blue = colors.HexColor("#eff6ff")
 
-        # Header bar
         c.setFillColor(blue)
         c.rect(0, y - 20, width, 50, fill=1, stroke=0)
         c.setFillColor(colors.white)
@@ -202,13 +174,11 @@ def generate_payslip(payroll_id):
 
         y -= 50
 
-        # Separator
         c.setStrokeColor(colors.HexColor("#e2e8f0"))
         c.setLineWidth(1)
         c.line(40, y, width - 40, y)
         y -= 25
 
-        # EMPLOYEE SUMMARY section
         c.setFillColor(dark)
         c.setFont("Helvetica-Bold", 11)
         c.drawString(40, y, "EMPLOYEE SUMMARY")
@@ -227,7 +197,6 @@ def generate_payslip(payroll_id):
             ("Pay Date", pay_date),
         ]
 
-        # Draw info on left
         for i, (label, value) in enumerate(fields):
             fy = y - (i * line_h)
             c.setFont("Helvetica-Bold", 9)
@@ -237,7 +206,6 @@ def generate_payslip(payroll_id):
             c.setFillColor(dark)
             c.drawString(val_x, fy, f":  {value}")
 
-        # Net Pay box on right
         box_x = 340
         box_y = y + 10
         box_w = 210
@@ -270,20 +238,15 @@ def generate_payslip(payroll_id):
 
         y -= 140
 
-        # Separator
         c.setStrokeColor(colors.HexColor("#e2e8f0"))
         c.line(40, y, width - 40, y)
         y -= 25
 
-        # EARNINGS & DEDUCTIONS Table
         col_left = 40
         col_mid = 310
         ear_amt_x = 210
-        ear_ytd_x = 260
         ded_amt_x = 480
-        ded_ytd_x = 530
 
-        # Table Header
         c.setFillColor(grey_bg)
         c.rect(col_left, y - 22, (width - 80) / 2, 22, fill=1, stroke=0)
         c.rect(col_mid, y - 22, (width - 80) / 2, 22, fill=1, stroke=0)
@@ -292,24 +255,22 @@ def generate_payslip(payroll_id):
         c.setFillColor(dark)
         c.drawString(col_left + 10, y - 15, "EARNINGS")
         c.drawString(ear_amt_x, y - 15, "AMOUNT")
-        c.drawString(ear_ytd_x, y - 15, "YTD")
         c.drawString(col_mid + 10, y - 15, "DEDUCTIONS")
         c.drawString(ded_amt_x, y - 15, "AMOUNT")
-        c.drawString(ded_ytd_x, y - 15, "YTD")
 
         y -= 22
 
         earnings = [
-            ("Basic", basic, basic * 3),
-            ("House Rent Allowance", hra, hra * 3),
-            ("Conveyance Allowance", conveyance, conveyance * 3),
-            ("Children Education Allowance", education, education * 3),
-            ("Special Allowance", special, special * 3),
+            ("Basic", basic),
+            ("House Rent Allowance", hra),
+            ("Conveyance Allowance", conveyance),
+            ("Children Education Allowance", education),
+            ("Special Allowance", special),
         ]
 
         deductions = [
-            ("EPF Contribution", 0, 0),
-            ("Professional Tax", 0, 0),
+            ("EPF Contribution", 0),
+            ("Professional Tax", 0),
         ]
 
         max_rows = max(len(earnings), len(deductions))
@@ -329,9 +290,6 @@ def generate_payslip(payroll_id):
                 c.drawString(col_left + 10, fy - 10, earnings[i][0])
                 c.setFont("Helvetica-Bold", 9)
                 c.drawString(ear_amt_x, fy - 10, indian_currency(earnings[i][1]))
-                c.setFont("Helvetica", 9)
-                c.setFillColor(colors.HexColor("#64748b"))
-                c.drawString(ear_ytd_x, fy - 10, indian_currency(earnings[i][2]))
 
             if i < len(deductions):
                 c.setFont("Helvetica", 9)
@@ -339,13 +297,9 @@ def generate_payslip(payroll_id):
                 c.drawString(col_mid + 10, fy - 10, deductions[i][0])
                 c.setFont("Helvetica-Bold", 9)
                 c.drawString(ded_amt_x, fy - 10, indian_currency(deductions[i][1]))
-                c.setFont("Helvetica", 9)
-                c.setFillColor(colors.HexColor("#64748b"))
-                c.drawString(ded_ytd_x, fy - 10, indian_currency(deductions[i][2]))
 
         y -= max_rows * row_h
 
-        # Totals row
         c.setStrokeColor(colors.HexColor("#cbd5e1"))
         c.setLineWidth(0.5)
         c.line(col_left, y, col_left + (width - 80) / 2, y)
@@ -361,7 +315,6 @@ def generate_payslip(payroll_id):
 
         y -= 35
 
-        # TOTAL NET PAYABLE box
         c.setStrokeColor(green_border)
         c.setLineWidth(1.5)
         c.setFillColor(green_bg)
@@ -380,7 +333,6 @@ def generate_payslip(payroll_id):
 
         y -= 55
 
-        # Amount in words
         c.setFont("Helvetica", 9)
         c.setFillColor(colors.HexColor("#64748b"))
         words = amount_in_words(net_pay)
@@ -388,12 +340,10 @@ def generate_payslip(payroll_id):
 
         y -= 30
 
-        # Footer separator
         c.setStrokeColor(colors.HexColor("#e2e8f0"))
         c.line(40, y, width - 40, y)
         y -= 15
 
-        # Footer
         c.setFont("Helvetica-Oblique", 8)
         c.setFillColor(colors.HexColor("#94a3b8"))
         c.drawCentredString(width / 2, y,
@@ -409,4 +359,5 @@ def generate_payslip(payroll_id):
                          mimetype='application/pdf')
 
     except Exception as e:
-        return f"Error: {str(e)}", 500
+        logger.error("Generate payslip error: %s", e)
+        return "An error occurred generating the payslip", 500

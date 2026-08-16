@@ -3,15 +3,16 @@ from app.db import get_db_connection
 from app.utils import login_required
 from io import BytesIO
 import csv
+import logging
 
 expense_report_bp = Blueprint('expense_report', __name__)
+
+logger = logging.getLogger(__name__)
+
 
 @expense_report_bp.route('/expense-reports')
 @login_required
 def expense_reports():
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
-
     start_date = request.args.get('start_date', '')
     end_date = request.args.get('end_date', '')
 
@@ -68,17 +69,14 @@ def expense_reports():
                                start_date=start_date,
                                end_date=end_date)
     except Exception as e:
-        import traceback
-        traceback.print_exc()
-        flash(f'Error generating report: {str(e)}', 'danger')
+        logger.error("Expense reports error: %s", e)
+        flash('An unexpected error occurred.', 'danger')
         return redirect(url_for('dashboard.dashboard'))
+
 
 @expense_report_bp.route('/expense-reports/export')
 @login_required
 def export_expenses():
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
-
     start_date = request.args.get('start_date', '')
     end_date = request.args.get('end_date', '')
 
@@ -86,7 +84,7 @@ def export_expenses():
         conn = get_db_connection()
         with conn.cursor() as cursor:
             query = """
-                SELECT e.date, e.category, e.amount, e.description, e.created_by
+                SELECT e.date, e.category, e.department, e.amount, e.description, e.created_by
                 FROM expense e
                 WHERE 1=1
             """
@@ -108,12 +106,13 @@ def export_expenses():
         output = BytesIO()
         text_output = []
         writer = csv.writer(text_output)
-        writer.writerow(['Date', 'Category', 'Amount', 'Description', 'Created By'])
+        writer.writerow(['Date', 'Category', 'Department', 'Amount', 'Description', 'Created By'])
 
         for exp in expenses:
             writer.writerow([
                 exp['date'],
                 exp['category'],
+                exp.get('department', 'General'),
                 exp['amount'],
                 exp['description'] or '',
                 exp['created_by'] or ''
@@ -128,5 +127,6 @@ def export_expenses():
             download_name='expense_report.csv'
         )
     except Exception as e:
-        flash(f'Error exporting expenses: {str(e)}', 'danger')
+        logger.error("Export expenses error: %s", e)
+        flash('An unexpected error occurred.', 'danger')
         return redirect(url_for('expense_report.expense_reports'))

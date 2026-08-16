@@ -1,25 +1,34 @@
-from flask import Blueprint, render_template, session, redirect, url_for, jsonify, request
+from flask import Blueprint, render_template, session, redirect, url_for, jsonify, request, flash
 from app.db import get_db_connection
+from app.utils import login_required
+from app.cache import cache, invalidate_cache
+import logging
 
 dashboard_bp = Blueprint('dashboard', __name__)
 
-@dashboard_bp.route('/dashboard')
-def dashboard():
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
+logger = logging.getLogger(__name__)
 
+
+@dashboard_bp.route('/dashboard')
+@login_required
+def dashboard():
     try:
+        cache_key = f"dashboard:{session.get('user_id')}"
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return render_template('dashboard.html', **cached_data)
+
         conn = get_db_connection()
         with conn.cursor() as cursor:
             cursor.execute("SELECT COUNT(*) as total FROM employee")
             total_employees = cursor.fetchone()['total']
-            
+
             cursor.execute("SELECT COUNT(*) as total FROM product")
             total_products = cursor.fetchone()['total']
-            
+
             cursor.execute("SELECT SUM(total_amount) as total FROM sale")
             total_revenue = float(cursor.fetchone()['total'] or 0)
-            
+
             cursor.execute("SELECT COUNT(*) as total FROM task WHERE status != 'Completed'")
             pending_tasks = int(cursor.fetchone()['total'])
 
@@ -59,80 +68,146 @@ def dashboard():
 
         chart_labels = [row['month'] for row in monthly_sales]
         chart_data = [float(row['revenue']) for row in monthly_sales]
+        net_profit = total_revenue - total_expenses - total_payroll
 
-        return render_template('dashboard.html', 
-                               total_employees=total_employees,
-                               total_products=total_products,
-                               total_revenue=total_revenue,
-                               total_users=total_users,
-                               pending_tasks=pending_tasks,
-                               low_stock_count=low_stock_count,
-                               total_expenses=total_expenses,
-                               total_payroll=total_payroll,
-                               recent_activity=recent_activity,
-                               chart_labels=chart_labels,
-                               chart_data=chart_data)
+        data = dict(
+            total_employees=total_employees,
+            total_products=total_products,
+            total_revenue=total_revenue,
+            total_users=total_users,
+            pending_tasks=pending_tasks,
+            low_stock_count=low_stock_count,
+            total_expenses=total_expenses,
+            total_payroll=total_payroll,
+            net_profit=net_profit,
+            recent_activity=recent_activity,
+            chart_labels=chart_labels,
+            chart_data=chart_data
+        )
+
+        cache.set(cache_key, data, ttl=60)
+        return render_template('dashboard.html', **data)
     except Exception as e:
+        logger.error("Dashboard error: %s", e)
         return render_template('500.html'), 500
 
+
+@dashboard_bp.route('/dashboard/refresh')
+@login_required
+def refresh_dashboard():
+    """API endpoint to force-refresh dashboard data via AJAX."""
+    try:
+        invalidate_cache(f"dashboard:{session.get('user_id')}")
+        cache_key = f"dashboard:{session.get('user_id')}"
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return jsonify({'status': 'refreshed', 'data': cached_data})
+        return jsonify({'status': 'refreshed'})
+    except Exception as e:
+        logger.error("Dashboard refresh error: %s", e)
+        return jsonify({'error': 'Refresh failed'}), 500
+
+
+@dashboard_bp.route('/api/dashboard/stream')
+@login_required
+def dashboard_stream():
+    """SSE endpoint for live dashboard updates."""
+    import json
+    import time as _time
+    from flask import Response
+
+    def generate():
+        last_hash = None
+        for _ in range(300):
+            try:
+                from app.db import get_db_connection
+                conn = get_db_connection()
+                try:
+                    with conn.cursor() as cursor:
+                        cursor.execute("SELECT SUM(total_amount) as total FROM sale")
+                        revenue = float(cursor.fetchone()['total'] or 0)
+                        cursor.execute("SELECT COUNT(*) as total FROM task WHERE status != 'Completed'")
+                        tasks = int(cursor.fetchone()['total'])
+                        cursor.execute("SELECT COUNT(*) as total FROM product WHERE quantity <= reorder_level")
+                        low_stock = int(cursor.fetchone()['total'])
+                finally:
+                    conn.close()
+
+                current_hash = f"{revenue}-{tasks}-{low_stock}"
+                if current_hash != last_hash:
+                    yield f"data: {json.dumps({'revenue': revenue, 'pending_tasks': tasks, 'low_stock': low_stock})}\n\n"
+                    last_hash = current_hash
+            except Exception:
+                pass
+            _time.sleep(5)
+
+    return Response(generate(), mimetype='text/event-stream')
+
+
 @dashboard_bp.route('/notifications')
+@login_required
 def notifications():
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
-        
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
-            # Fetch all notifications for the user
             cursor.execute("SELECT * FROM notifications WHERE user_id = %s ORDER BY created_at DESC", (session['user_id'],))
             notifs = cursor.fetchall()
-            
-            # Mark all as read when viewed
+
             cursor.execute("UPDATE notifications SET is_read = 1 WHERE user_id = %s", (session['user_id'],))
             conn.commit()
-            
+
         conn.close()
         return render_template('notifications.html', notifications=notifs)
     except Exception as e:
-        return f"Error: {str(e)}"
+        logger.error("Notifications error: %s", e)
+        flash('An error occurred while loading notifications.', 'danger')
+        return redirect(url_for('dashboard.dashboard'))
+
 
 @dashboard_bp.route('/api/search')
+@login_required
 def global_search():
     query = request.args.get('q', '').strip()
     if not query or len(query) < 2:
         return jsonify([])
-        
+
+    cache_key = f"search:{query}"
+    cached_results = cache.get(cache_key)
+    if cached_results:
+        return jsonify(cached_results)
+
     try:
         conn = get_db_connection()
         results = []
         with conn.cursor() as cursor:
-            # Search Employees
             cursor.execute("""
-                SELECT 'employee' as type, u.name as title, e.department as subtitle, e.emp_id as id 
-                FROM employee e 
-                JOIN users u ON e.user_id = u.user_id 
+                SELECT 'employee' as type, u.name as title, e.department as subtitle, e.emp_id as id
+                FROM employee e
+                JOIN users u ON e.user_id = u.user_id
                 WHERE u.name LIKE %s OR e.department LIKE %s
+                LIMIT 10
             """, (f'%{query}%', f'%{query}%'))
             results.extend(cursor.fetchall())
-            
-            # Search Products
+
             cursor.execute("""
-                SELECT 'product' as type, name as title, sku as subtitle, product_id as id 
-                FROM product 
+                SELECT 'product' as type, name as title, sku as subtitle, product_id as id
+                FROM product
                 WHERE name LIKE %s OR sku LIKE %s
+                LIMIT 10
             """, (f'%{query}%', f'%{query}%'))
             results.extend(cursor.fetchall())
-            
-            # Search Tasks
+
             cursor.execute("""
-                SELECT 'task' as type, title as title, status as subtitle, task_id as id 
-                FROM task 
+                SELECT 'task' as type, title as title, status as subtitle, task_id as id
+                FROM task
                 WHERE title LIKE %s
+                LIMIT 10
             """, (f'%{query}%',))
             results.extend(cursor.fetchall())
-            
+
         conn.close()
+        cache.set(cache_key, results, ttl=120)
         return jsonify(results)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
+        logger.error("Search error: %s", e)
+        return jsonify({'error': 'Search temporarily unavailable'}), 500

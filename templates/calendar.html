@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}Calendar - Nexus ERP{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.css" rel="stylesheet">
+<style>
+    .fc {
+        --fc-bg-event: rgba(255,255,255,0.03);
+        --fc-border-color: var(--card-border);
+        --fc-button-bg-color: var(--card-bg);
+        --fc-button-border-color: var(--card-border);
+        --fc-button-hover-bg-color: var(--accent-blue);
+        --fc-button-hover-border-color: var(--accent-blue);
+        --fc-button-active-bg-color: var(--accent-blue);
+        --fc-button-active-border-color: var(--accent-blue);
+        --fc-event-bg-color: var(--accent-blue);
+        --fc-today-bg-color: rgba(59, 130, 246, 0.06);
+    }
+    .fc .fc-daygrid-day-number { color: var(--text-primary); }
+    .fc .fc-col-header-cell-cushion { color: var(--text-primary); font-weight: 700; }
+    .fc .fc-button { border-radius: 10px; font-weight: 600; font-size: 13px; padding: 8px 16px; }
+    .fc .fc-button-active { color: white !important; }
+    .fc .fc-toolbar-title { font-size: 1.3rem; font-weight: 800; color: white; }
+    .fc-event { border-radius: 8px !important; border: none !important; padding: 2px 8px !important; font-size: 12px !important; font-weight: 600 !important; }
+    .event-leave { background: var(--accent-orange) !important; }
+    .event-task { background: var(--accent-blue) !important; }
+    .event-po { background: var(--accent-purple) !important; }
+    .event-quotation { background: var(--accent-green) !important; }
+    .event-custom { background: var(--accent-red) !important; }
+    .legend-dot {
+        width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px;
+    }
+    .btn-apply {
+        background: linear-gradient(135deg, var(--accent-blue), #2563eb);
+        border: none;
+        border-radius: 12px;
+        font-weight: 700;
+        box-shadow: 0 10px 20px rgba(59, 130, 246, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="header-section animate-up">
+    <div>
+        <h1 class="page-title">Calendar</h1>
+        <div class="text-secondary">Schedule, events, and deadlines at a glance.</div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-9 animate-up delay-1">
+        <div class="glass-card">
+            <div id="calendar"></div>
+        </div>
+    </div>
+    <div class="col-lg-3 animate-up delay-2">
+        <div class="glass-card mb-4">
+            <h6 class="fw-bold mb-3">Legend</h6>
+            <div class="d-flex flex-column gap-2" style="font-size: 13px; color: var(--text-secondary);">
+                <div><span class="legend-dot" style="background: var(--accent-orange);"></span>Leaves</div>
+                <div><span class="legend-dot" style="background: var(--accent-blue);"></span>Tasks</div>
+                <div><span class="legend-dot" style="background: var(--accent-purple);"></span>Purchase Orders</div>
+                <div><span class="legend-dot" style="background: var(--accent-green);"></span>Quotations</div>
+                <div><span class="legend-dot" style="background: var(--accent-red);"></span>Custom Events</div>
+            </div>
+        </div>
+        <div class="glass-card">
+            <h6 class="fw-bold mb-3">Add Event</h6>
+            <form id="addEventForm" method="POST" action="/calendar/add-event">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">Title</label>
+                    <input type="text" name="title" class="form-control" placeholder="Event title" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">Date</label>
+                    <input type="date" name="event_date" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">Category</label>
+                    <select name="category" class="form-select">
+                        <option value="task">Task</option>
+                        <option value="leave">Leave</option>
+                        <option value="po">Purchase Order</option>
+                        <option value="quotation">Quotation</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">Description</label>
+                    <textarea name="description" class="form-control" rows="2" placeholder="Optional description..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-apply text-white w-100">
+                    <i class="bi bi-plus-lg me-2"></i>Add Event
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const calendarEl = document.getElementById('calendar');
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        height: 650,
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay'
+        },
+        events: [
+            {% for e in calendar_events %}
+            {
+                title: '{{ e.title }}',
+                date: '{{ e.date }}',
+                classNames: ['event-{{ e.category }}'],
+                extendedProps: {
+                    description: '{{ e.description | default("") }}',
+                    category: '{{ e.category }}'
+                }
+            },
+            {% endfor %}
+        ],
+        eventClick: function(info) {
+            const desc = info.event.extendedProps.description || 'No description';
+            alert(info.event.title + '\n' + desc);
+        },
+        dayMaxEvents: 3,
+        nowIndicator: true,
+        navLinks: true
+    });
+    calendar.render();
+});
+</script>
+{% endblock %}

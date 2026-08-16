@@ -1,0 +1,311 @@
+{% extends "base.html" %}
+
+{% block title %}{% if quotation %}Edit {{ quotation.quote_number }}{% else %}New Quotation{% endif %} - Nexus ERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-label { font-size: 13px; margin-bottom: 6px; }
+    .item-row { background: rgba(255,255,255,0.02); border: 1px solid var(--card-border); border-radius: 14px; padding: 16px; margin-bottom: 12px; transition: 0.2s; }
+    .item-row:hover { border-color: rgba(59,130,246,0.2); }
+    .btn-glow {
+        background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+        border: none; color: white; padding: 14px 28px; border-radius: 14px;
+        font-weight: 700; font-size: 15px; transition: 0.3s;
+    }
+    .btn-glow:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(59,130,246,0.4); color: white; }
+    .summary-box { background: rgba(59,130,246,0.05); border: 1px solid rgba(59,130,246,0.15); border-radius: 16px; padding: 20px; }
+    .summary-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; }
+    .summary-row.total { border-top: 2px solid var(--accent-blue); padding-top: 12px; margin-top: 8px; font-weight: 800; font-size: 18px; color: var(--accent-blue); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="header-section animate-up">
+    <div>
+        <h1 class="page-title">{% if quotation %}Edit {{ quotation.quote_number }}{% else %}Create Quotation{% endif %}</h1>
+        <div class="text-secondary">{% if quotation %}Modify quotation details and line items{% else %}Build a professional quotation for your customer{% endif %}</div>
+    </div>
+    <a href="{{ url_for('quotation.quotation_list') }}" class="btn btn-sm" style="background:rgba(148,163,184,0.1);border:1px solid rgba(148,163,184,0.2);color:var(--text-secondary);border-radius:10px;">
+        <i class="bi bi-arrow-left me-1"></i> Back to Quotations
+    </a>
+</div>
+
+<form method="POST" id="quotationForm">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+    <div class="row g-4 animate-up delay-1">
+        <!-- Left Column: Details -->
+        <div class="col-lg-8">
+            <div class="glass-card mb-4">
+                <h6 class="text-white fw-bold mb-4"><i class="bi bi-person me-2" style="color:var(--accent-blue);"></i>Customer & Subject</h6>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Customer *</label>
+                        <select class="form-select" name="customer_id" required>
+                            <option value="">Select customer...</option>
+                            {% for c in customers %}
+                            <option value="{{ c.customer_id }}" {% if quotation and quotation.customer_id == c.customer_id %}selected{% endif %}>{{ c.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Subject *</label>
+                        <input type="text" class="form-control" name="subject" value="{{ quotation.subject if quotation else '' }}" placeholder="e.g. Office furniture supply quote" required>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Line Items -->
+            <div class="glass-card mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h6 class="text-white fw-bold mb-0"><i class="bi bi-list-ul me-2" style="color:var(--accent-blue);"></i>Line Items</h6>
+                    <button type="button" class="btn btn-sm" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:var(--accent-green);border-radius:10px;font-weight:600;" onclick="addItem()">
+                        <i class="bi bi-plus-lg me-1"></i> Add Item
+                    </button>
+                </div>
+                <div id="itemsContainer">
+                    {% if items %}
+                        {% for item in items %}
+                        <div class="item-row" data-index="{{ loop.index0 }}">
+                            <div class="row g-3 align-items-end">
+                                <div class="col-md-4">
+                                    <label class="form-label">Product *</label>
+                                    <select class="form-select product-select" name="product_id[]" required onchange="updatePrice(this)">
+                                        <option value="">Select product...</option>
+                                        {% for p in products %}
+                                        <option value="{{ p.product_id }}" data-price="{{ p.unit_price }}" data-stock="{{ p.stock }}" {% if item.product_id == p.product_id %}selected{% endif %}>{{ p.name }} ({{ p.unit_price|indian_currency }})</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Qty *</label>
+                                    <input type="number" class="form-control qty-input" name="quantity[]" value="{{ item.quantity }}" min="1" required oninput="calcRow(this)">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Unit Price *</label>
+                                    <input type="number" class="form-control price-input" name="unit_price[]" value="{{ item.unit_price }}" step="0.01" min="0" required oninput="calcRow(this)">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Discount</label>
+                                    <input type="number" class="form-control discount-input" name="discount[]" value="{{ item.discount }}" step="0.01" min="0" oninput="calcRow(this)">
+                                </div>
+                                <div class="col-md-1">
+                                    <label class="form-label">Total</label>
+                                    <div class="form-control row-total" style="background:rgba(16,185,129,0.05);border-color:rgba(16,185,129,0.2);color:var(--accent-green);font-weight:700;">{{ item.line_total|indian_currency }}</div>
+                                </div>
+                                <div class="col-md-1 text-end">
+                                    <button type="button" class="btn btn-sm" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:var(--accent-red);border-radius:8px;" onclick="removeItem(this)" title="Remove">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="item-row" data-index="0">
+                            <div class="row g-3 align-items-end">
+                                <div class="col-md-4">
+                                    <label class="form-label">Product *</label>
+                                    <select class="form-select product-select" name="product_id[]" required onchange="updatePrice(this)">
+                                        <option value="">Select product...</option>
+                                        {% for p in products %}
+                                        <option value="{{ p.product_id }}" data-price="{{ p.unit_price }}" data-stock="{{ p.stock }}">{{ p.name }} ({{ p.unit_price|indian_currency }})</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Qty *</label>
+                                    <input type="number" class="form-control qty-input" name="quantity[]" value="1" min="1" required oninput="calcRow(this)">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Unit Price *</label>
+                                    <input type="number" class="form-control price-input" name="unit_price[]" value="0" step="0.01" min="0" required oninput="calcRow(this)">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Discount</label>
+                                    <input type="number" class="form-control discount-input" name="discount[]" value="0" step="0.01" min="0" oninput="calcRow(this)">
+                                </div>
+                                <div class="col-md-1">
+                                    <label class="form-label">Total</label>
+                                    <div class="form-control row-total" style="background:rgba(16,185,129,0.05);border-color:rgba(16,185,129,0.2);color:var(--accent-green);font-weight:700;">Rs. 0.00</div>
+                                </div>
+                                <div class="col-md-1 text-end">
+                                    <button type="button" class="btn btn-sm" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:var(--accent-red);border-radius:8px;" onclick="removeItem(this)" title="Remove">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Notes & Terms -->
+            <div class="glass-card mb-4">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <label class="form-label">Notes (visible on quotation)</label>
+                        <textarea class="form-control" name="notes" rows="4" placeholder="Any notes for the customer...">{{ quotation.notes if quotation else '' }}</textarea>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Terms & Conditions</label>
+                        <textarea class="form-control" name="terms" rows="4" placeholder="Payment terms, delivery terms, warranty info...">{{ quotation.terms if quotation else '' }}</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Summary -->
+        <div class="col-lg-4">
+            <div class="glass-card mb-4" style="position:sticky;top:20px;">
+                <h6 class="text-white fw-bold mb-4"><i class="bi bi-calculator me-2" style="color:var(--accent-blue);"></i>Summary</h6>
+
+                <div class="mb-3">
+                    <label class="form-label">Validity (days)</label>
+                    <input type="number" class="form-control" name="valid_days" value="{{ quotation.valid_days if quotation and quotation.valid_days is defined else 30 }}" min="1" max="365">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Discount (%)</label>
+                    <input type="number" class="form-control" name="discount_pct" value="{{ quotation.discount_pct if quotation else 0 }}" step="0.01" min="0" max="100" oninput="calcSummary()">
+                </div>
+                <div class="mb-4">
+                    <label class="form-label">Tax (%)</label>
+                    <input type="number" class="form-control" name="tax_pct" value="{{ quotation.tax_pct if quotation else 0 }}" step="0.01" min="0" max="100" oninput="calcSummary()">
+                </div>
+
+                <div class="summary-box">
+                    <div class="summary-row">
+                        <span class="text-secondary">Subtotal</span>
+                        <span class="text-white fw-bold" id="summarySubtotal">Rs. 0.00</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="text-secondary">Discount</span>
+                        <span style="color:var(--accent-red);font-weight:600;" id="summaryDiscount">- Rs. 0.00</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="text-secondary">Tax</span>
+                        <span class="text-white" id="summaryTax">Rs. 0.00</span>
+                    </div>
+                    <div class="summary-row total">
+                        <span>Grand Total</span>
+                        <span id="summaryTotal">Rs. 0.00</span>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-glow w-100 mt-4">
+                    <i class="bi bi-{% if quotation %}check-lg{% else %}plus-lg{% endif %} me-2"></i>
+                    {% if quotation %}Update Quotation{% else %}Create Quotation{% endif %}
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const products = {{ products|tojson }};
+
+function formatCurrency(num) {
+    return 'Rs. ' + parseFloat(num).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
+
+function updatePrice(sel) {
+    const opt = sel.options[sel.selectedIndex];
+    const row = sel.closest('.item-row');
+    if (opt && opt.dataset.price) {
+        row.querySelector('.price-input').value = parseFloat(opt.dataset.price).toFixed(2);
+        calcRow(sel);
+    }
+}
+
+function calcRow(el) {
+    const row = el.closest('.item-row');
+    const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
+    const price = parseFloat(row.querySelector('.price-input').value) || 0;
+    const disc = parseFloat(row.querySelector('.discount-input').value) || 0;
+    const total = (qty * price) - disc;
+    row.querySelector('.row-total').textContent = formatCurrency(Math.max(0, total));
+    calcSummary();
+}
+
+function calcSummary() {
+    let subtotal = 0;
+    document.querySelectorAll('.item-row').forEach(row => {
+        const qty = parseFloat(row.querySelector('.qty-input')?.value) || 0;
+        const price = parseFloat(row.querySelector('.price-input')?.value) || 0;
+        const disc = parseFloat(row.querySelector('.discount-input')?.value) || 0;
+        subtotal += (qty * price) - disc;
+    });
+
+    const discPct = parseFloat(document.querySelector('[name="discount_pct"]')?.value) || 0;
+    const taxPct = parseFloat(document.querySelector('[name="tax_pct"]')?.value) || 0;
+    const discAmt = subtotal * (discPct / 100);
+    const afterDisc = subtotal - discAmt;
+    const taxAmt = afterDisc * (taxPct / 100);
+    const grandTotal = afterDisc + taxAmt;
+
+    document.getElementById('summarySubtotal').textContent = formatCurrency(subtotal);
+    document.getElementById('summaryDiscount').textContent = '- ' + formatCurrency(discAmt);
+    document.getElementById('summaryTax').textContent = formatCurrency(taxAmt);
+    document.getElementById('summaryTotal').textContent = formatCurrency(Math.max(0, grandTotal));
+}
+
+let itemIndex = document.querySelectorAll('.item-row').length;
+
+function addItem() {
+    const container = document.getElementById('itemsContainer');
+    const div = document.createElement('div');
+    div.className = 'item-row';
+    div.dataset.index = itemIndex;
+
+    let options = '<option value="">Select product...</option>';
+    products.forEach(p => {
+        options += `<option value="${p.product_id}" data-price="${p.unit_price}" data-stock="${p.stock}">${p.name} (${formatCurrency(p.unit_price)})</option>`;
+    });
+
+    div.innerHTML = `
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">Product *</label>
+                <select class="form-select product-select" name="product_id[]" required onchange="updatePrice(this)">${options}</select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Qty *</label>
+                <input type="number" class="form-control qty-input" name="quantity[]" value="1" min="1" required oninput="calcRow(this)">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Unit Price *</label>
+                <input type="number" class="form-control price-input" name="unit_price[]" value="0" step="0.01" min="0" required oninput="calcRow(this)">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Discount</label>
+                <input type="number" class="form-control discount-input" name="discount[]" value="0" step="0.01" min="0" oninput="calcRow(this)">
+            </div>
+            <div class="col-md-1">
+                <label class="form-label">Total</label>
+                <div class="form-control row-total" style="background:rgba(16,185,129,0.05);border-color:rgba(16,185,129,0.2);color:var(--accent-green);font-weight:700;">${formatCurrency(0)}</div>
+            </div>
+            <div class="col-md-1 text-end">
+                <button type="button" class="btn btn-sm" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:var(--accent-red);border-radius:8px;" onclick="removeItem(this)" title="Remove">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        </div>`;
+    container.appendChild(div);
+    itemIndex++;
+}
+
+function removeItem(btn) {
+    const rows = document.querySelectorAll('.item-row');
+    if (rows.length <= 1) { alert('At least one item is required.'); return; }
+    btn.closest('.item-row').remove();
+    calcSummary();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.qty-input').forEach(el => calcRow(el));
+    calcSummary();
+});
+</script>
+{% endblock %}

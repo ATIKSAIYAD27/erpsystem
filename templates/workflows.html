@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}Workflow Automation - Nexus ERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .workflow-card {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 20px;
+        padding: 24px;
+        backdrop-filter: blur(15px);
+        transition: all 0.3s;
+    }
+    .workflow-card:hover {
+        border-color: rgba(59, 130, 246, 0.3);
+        transform: translateY(-3px);
+    }
+    .trigger-badge {
+        padding: 4px 12px;
+        border-radius: 8px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+    .trigger-threshold { background: rgba(59, 130, 246, 0.1); color: var(--accent-blue); border: 1px solid rgba(59, 130, 246, 0.2); }
+    .trigger-auto { background: rgba(16, 185, 129, 0.1); color: var(--accent-green); border: 1px solid rgba(16, 185, 129, 0.2); }
+    .btn-approve { background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: var(--accent-green); border-radius: 10px; font-weight: 600; }
+    .btn-reject { background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: var(--accent-red); border-radius: 10px; font-weight: 600; }
+    .btn-create {
+        background: linear-gradient(135deg, var(--accent-blue), #2563eb);
+        border: none;
+        border-radius: 12px;
+        font-weight: 700;
+        box-shadow: 0 10px 20px rgba(59, 130, 246, 0.2);
+    }
+    .pending-count {
+        background: var(--accent-orange);
+        color: white;
+        border-radius: 50%;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 800;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="header-section animate-up">
+    <div>
+        <h1 class="page-title">Workflow Automation</h1>
+        <div class="text-secondary">Automate approvals, thresholds, and business rules.</div>
+    </div>
+    <button class="btn btn-create text-white" data-bs-toggle="modal" data-bs-target="#createWorkflowModal">
+        <i class="bi bi-plus-lg me-2"></i>Create Workflow
+    </button>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }} rounded-4 border-0 mb-4 animate-up">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<!-- Active Workflows -->
+<h5 class="fw-bold mb-4 animate-up delay-1">Active Workflows</h5>
+<div class="row g-4 mb-5">
+    {% for wf in workflows %}
+    <div class="col-xl-3 col-lg-6 animate-up delay-{{ loop.index }}">
+        <div class="workflow-card h-100">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="flex-grow-1">
+                    <h6 class="fw-bold text-white mb-1">{{ wf.name }}</h6>
+                    <span class="trigger-badge trigger-{{ 'threshold' if wf.trigger_type == 'threshold' else 'auto' }}">{{ wf.trigger_type }}</span>
+                </div>
+                {% if wf.pending_count > 0 %}
+                <div class="pending-count">{{ wf.pending_count }}</div>
+                {% endif %}
+            </div>
+            <div class="mb-2" style="font-size: 13px; color: var(--text-secondary);">
+                <div class="mb-1"><i class="bi bi-gear me-2"></i>Threshold: {{ wf.threshold }}</div>
+                <div><i class="bi bi-clock me-2"></i>Created: {{ wf.created_date }}</div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    {% if not workflows %}
+    <div class="col-12 animate-up delay-1">
+        <div class="glass-card text-center py-5">
+            <i class="bi bi-diagram-3 display-4 text-secondary mb-3"></i>
+            <p class="text-secondary">No workflows configured yet.</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Recent Requests -->
+<div class="glass-card animate-up delay-4">
+    <h5 class="fw-bold mb-4">Recent Requests</h5>
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr class="text-secondary small text-uppercase">
+                    <th>Request</th>
+                    <th>Workflow</th>
+                    <th>Value</th>
+                    <th>Requested By</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in recent_requests %}
+                <tr>
+                    <td class="fw-bold text-white">{{ r.title }}</td>
+                    <td><span class="text-white-50">{{ r.workflow_name }}</span></td>
+                    <td class="text-white">{{ r.value|indian_currency }}</td>
+                    <td class="text-white">{{ r.requested_by }}</td>
+                    <td class="text-secondary small">{{ r.created_date }}</td>
+                    <td>
+                        <span class="status-badge status-{{ r.status|lower }}">{{ r.status }}</span>
+                    </td>
+                    <td class="text-end">
+                        {% if r.status == 'Pending' %}
+                        <div class="btn-group">
+                            <form action="/workflows/approve/{{ r.request_id }}" method="POST" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <button type="submit" class="btn btn-approve btn-sm me-1"><i class="bi bi-check-circle me-1"></i>Approve</button>
+                            </form>
+                            <form action="/workflows/reject/{{ r.request_id }}" method="POST" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <button type="submit" class="btn btn-reject btn-sm"><i class="bi bi-x-circle me-1"></i>Reject</button>
+                            </form>
+                        </div>
+                        {% else %}
+                        <span class="text-secondary small">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not recent_requests %}
+                <tr>
+                    <td colspan="7" class="text-center py-5 text-secondary">No requests yet.</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Create Workflow Modal -->
+<div class="modal fade" id="createWorkflowModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark border-secondary rounded-4">
+            <form action="/workflows/create" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title text-white fw-bold">Create New Workflow</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small">Workflow Name</label>
+                        <input type="text" name="name" class="form-control" placeholder="e.g. PO Approval Over 1L" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small">Trigger Type</label>
+                        <select name="trigger_type" class="form-select" required>
+                            <option value="threshold">Threshold Based</option>
+                            <option value="automatic">Automatic</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small">Threshold Value</label>
+                        <input type="number" name="threshold" class="form-control" placeholder="e.g. 100000" min="0">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small">Target Module</label>
+                        <select name="module" class="form-select">
+                            <option value="purchase_orders">Purchase Orders</option>
+                            <option value="quotations">Quotations</option>
+                            <option value="expenses">Expenses</option>
+                            <option value="leave">Leave Requests</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small">Description</label>
+                        <textarea name="description" class="form-control" rows="2" placeholder="Describe when this workflow triggers..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="submit" class="btn btn-create text-white w-100">Create Workflow</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

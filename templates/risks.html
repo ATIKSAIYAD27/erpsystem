@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block title %}Risk Management - Nexus ERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .severity-critical { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
+    .severity-high { background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.2); }
+    .severity-medium { background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.2); }
+    .severity-low { background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); }
+    .severity-badge {
+        padding: 6px 14px;
+        border-radius: 10px;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+    .btn-add {
+        background: linear-gradient(135deg, var(--accent-blue), #2563eb);
+        border: none;
+        border-radius: 12px;
+        font-weight: 700;
+        box-shadow: 0 10px 20px rgba(59, 130, 246, 0.2);
+    }
+    .btn-action {
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 12px;
+        padding: 6px 14px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="header-section animate-up">
+    <div>
+        <h1 class="page-title">Risk Management</h1>
+        <div class="text-secondary">Identify, assess, and mitigate organizational risks.</div>
+    </div>
+    <button class="btn btn-add text-white" data-bs-toggle="modal" data-bs-target="#addRiskModal">
+        <i class="bi bi-plus-lg me-2"></i>Add Risk
+    </button>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }} rounded-4 border-0 mb-4 animate-up">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<!-- Stats Row -->
+<div class="row g-4 mb-5">
+    <div class="col-xl-3 col-lg-6">
+        <div class="stat-card animate-up delay-1">
+            <div class="card-icon-wrapper blue-glow">
+                <i class="bi bi-shield-exclamation"></i>
+            </div>
+            <h2 class="stat-value">{{ active_risks }}</h2>
+            <div class="stat-label">Active Risks</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-lg-6">
+        <div class="stat-card animate-up delay-2">
+            <div class="card-icon-wrapper red-glow">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+            </div>
+            <h2 class="stat-value">{{ critical_risks }}</h2>
+            <div class="stat-label">Critical</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-lg-6">
+        <div class="stat-card animate-up delay-3">
+            <div class="card-icon-wrapper orange-glow">
+                <i class="bi bi-exclamation-diamond-fill"></i>
+            </div>
+            <h2 class="stat-value">{{ high_risks }}</h2>
+            <div class="stat-label">High Severity</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-lg-6">
+        <div class="stat-card animate-up delay-4">
+            <div class="card-icon-wrapper blue-glow">
+                <i class="bi bi-clipboard2-check"></i>
+            </div>
+            <h2 class="stat-value">{{ risks|length }}</h2>
+            <div class="stat-label">Total Register</div>
+        </div>
+    </div>
+</div>
+
+<!-- Risk Register -->
+<div class="glass-card animate-up delay-3">
+    <h5 class="fw-bold mb-4">Risk Register</h5>
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr class="text-secondary small text-uppercase">
+                    <th>Title</th>
+                    <th>Category</th>
+                    <th>Severity</th>
+                    <th>Probability</th>
+                    <th>Impact</th>
+                    <th>Score</th>
+                    <th>Assigned To</th>
+                    <th>Status</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in risks %}
+                {% set score = r.probability * r.impact %}
+                <tr>
+                    <td class="fw-bold text-white">{{ r.title }}</td>
+                    <td><span class="text-white-50 small">{{ r.category }}</span></td>
+                    <td>
+                        <span class="severity-badge severity-{{ r.severity|lower }}">{{ r.severity }}</span>
+                    </td>
+                    <td class="text-white">{{ r.probability }}/5</td>
+                    <td class="text-white">{{ r.impact }}/5</td>
+                    <td>
+                        <span class="fw-bold {% if score >= 16 %}text-danger{% elif score >= 9 %}text-warning{% elif score >= 4 %}text-info{% else %}text-success{% endif %}">{{ score }}</span>
+                    </td>
+                    <td class="text-white">{{ r.assigned_to }}</td>
+                    <td>
+                        <span class="status-badge status-{{ r.status|lower }}">{{ r.status }}</span>
+                    </td>
+                    <td class="text-end">
+                        {% if r.status == 'Open' %}
+                        <div class="btn-group">
+                            <form action="/risks/{{ r.risk_id }}/status" method="POST" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <input type="hidden" name="status" value="Mitigating"/>
+                                <button type="submit" class="btn btn-outline-warning btn-action me-1"><i class="bi bi-arrow-clockwise me-1"></i>Mitigate</button>
+                            </form>
+                            <form action="/risks/{{ r.risk_id }}/status" method="POST" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <input type="hidden" name="status" value="Closed"/>
+                                <button type="submit" class="btn btn-outline-success btn-action"><i class="bi bi-check-circle me-1"></i>Close</button>
+                            </form>
+                        </div>
+                        {% elif r.status == 'Mitigating' %}
+                        <form action="/risks/{{ r.risk_id }}/status" method="POST" class="d-inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <input type="hidden" name="status" value="Closed"/>
+                            <button type="submit" class="btn btn-outline-success btn-action"><i class="bi bi-check-circle me-1"></i>Close</button>
+                        </form>
+                        {% else %}
+                        <span class="text-secondary small">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not risks %}
+                <tr>
+                    <td colspan="9" class="text-center py-5 text-secondary">No risks registered.</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Risk Modal -->
+<div class="modal fade" id="addRiskModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content bg-dark border-secondary rounded-4">
+            <form action="/risks/add" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title text-white fw-bold">Register New Risk</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label text-secondary small">Title</label>
+                            <input type="text" name="title" class="form-control" placeholder="Risk title" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label text-secondary small">Description</label>
+                            <textarea name="description" class="form-control" rows="2" placeholder="Describe the risk..."></textarea>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-secondary small">Category</label>
+                            <select name="category" class="form-select" required>
+                                <option value="Operational">Operational</option>
+                                <option value="Financial">Financial</option>
+                                <option value="Compliance">Compliance</option>
+                                <option value="Technology">Technology</option>
+                                <option value="HR">HR</option>
+                                <option value="Market">Market</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-secondary small">Severity Level</label>
+                            <select name="severity" class="form-select" required>
+                                <option value="Low">Low</option>
+                                <option value="Medium">Medium</option>
+                                <option value="High">High</option>
+                                <option value="Critical">Critical</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-secondary small">Assigned To</label>
+                            <select name="assigned_to" class="form-select">
+                                {% for emp in employees %}
+                                <option value="{{ emp.name }}">{{ emp.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label text-secondary small">Probability (1-5)</label>
+                            <select name="probability" class="form-select" required>
+                                <option value="1">1 - Very Low</option>
+                                <option value="2">2 - Low</option>
+                                <option value="3">3 - Medium</option>
+                                <option value="4">4 - High</option>
+                                <option value="5">5 - Very High</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label text-secondary small">Impact (1-5)</label>
+                            <select name="impact" class="form-select" required>
+                                <option value="1">1 - Minimal</option>
+                                <option value="2">2 - Minor</option>
+                                <option value="3">3 - Moderate</option>
+                                <option value="4">4 - Major</option>
+                                <option value="5">5 - Catastrophic</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-secondary small">Mitigation Plan</label>
+                            <textarea name="mitigation_plan" class="form-control" rows="2" placeholder="Describe mitigation steps..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="submit" class="btn btn-add text-white w-100">Register Risk</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,132 +1,42 @@
-<!DOCTYPE html>
-<html lang="en" data-bs-theme="dark">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Page Not Found - Nexus ERP</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
-    <style>
-        :root {
-            --bg-color: #05070a;
-            --card-bg: rgba(15, 23, 42, 0.6);
-            --card-border: rgba(255, 255, 255, 0.04);
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --accent-blue: #3b82f6;
-            --accent-purple: #8b5cf6;
-        }
+{% block title %}Page Not Found - Nexus ERP{% endblock %}
 
-        body {
-            font-family: 'Outfit', sans-serif;
-            background-color: var(--bg-color);
-            background-image:
-                radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.03) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.03) 0%, transparent 40%);
-            color: var(--text-primary);
-            min-height: 100vh;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-attachment: fixed;
-        }
+{% block extra_css %}
+<style>
+    .error-code {
+        font-size: 140px;
+        opacity: 0.9;
+        background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: pulse-error 3s ease-in-out infinite;
+    }
+    @keyframes pulse-error {
+        0%, 100% { opacity: 0.8; }
+        50% { opacity: 1; }
+    }
+    .error-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: rgba(59, 130, 246, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        font-size: 28px;
+        color: var(--accent-blue);
+    }
+</style>
+{% endblock %}
 
-        .error-card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 28px;
-            padding: 60px 80px;
-            backdrop-filter: blur(15px);
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-            max-width: 520px;
-        }
-
-        .error-code {
-            font-size: 140px;
-            font-weight: 800;
-            line-height: 1;
-            margin-bottom: 20px;
-            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            opacity: 0.9;
-        }
-
-        .error-title {
-            font-size: 28px;
-            font-weight: 700;
-            color: white;
-            margin-bottom: 12px;
-        }
-
-        .error-message {
-            color: var(--text-secondary);
-            font-size: 16px;
-            margin-bottom: 35px;
-            line-height: 1.6;
-        }
-
-        .btn-home {
-            background: linear-gradient(135deg, var(--accent-blue), #2563eb);
-            border: none;
-            color: white;
-            padding: 14px 32px;
-            border-radius: 14px;
-            font-weight: 700;
-            font-size: 15px;
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3);
-            transition: 0.3s;
-            text-decoration: none;
-        }
-        .btn-home:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 30px rgba(37, 99, 235, 0.5);
-            color: white;
-        }
-
-        .brand-footer {
-            position: absolute;
-            bottom: 25px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: var(--text-secondary);
-            font-size: 13px;
-            font-weight: 500;
-        }
-
-        .brand-footer-icon {
-            width: 28px;
-            height: 28px;
-            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            color: white;
-        }
-
-        @keyframes fadeSlideUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-up { animation: fadeSlideUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-    </style>
-</head>
-
-<body>
+{% block content %}
+<div class="d-flex align-items-center justify-content-center" style="min-height: 60vh;">
     <div class="error-card animate-up">
+        <div class="error-icon">
+            <i class="bi bi-question-circle-fill"></i>
+        </div>
         <div class="error-code">404</div>
         <h1 class="error-title">Page Not Found</h1>
         <p class="error-message">The page you're looking for doesn't exist or has been moved. Please check the URL or navigate back to the dashboard.</p>
@@ -135,10 +45,10 @@
         </a>
         <div class="brand-footer">
             <div class="brand-footer-icon">
-                <i class="bi bi-hexagon-fill"></i>
+                <i class="bi bi-building-fill"></i>
             </div>
             <span>Nexus ERP</span>
         </div>
     </div>
-</body>
-</html>
+</div>
+{% endblock %}

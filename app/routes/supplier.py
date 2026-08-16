@@ -1,8 +1,10 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
-import pymysql
-from app.utils import login_required, admin_required
+from app.utils import login_required, manager_or_admin_required, admin_required
+import logging
 
 supplier_bp = Blueprint('supplier', __name__)
+
+logger = logging.getLogger(__name__)
 
 from app.db import get_db_connection
 
@@ -10,9 +12,6 @@ from app.db import get_db_connection
 @supplier_bp.route('/suppliers')
 @login_required
 def supplier_list():
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
-
     search_query = request.args.get('q', '')
     try:
         conn = get_db_connection()
@@ -38,16 +37,14 @@ def supplier_list():
         return render_template('suppliers.html', suppliers=suppliers)
 
     except Exception as e:
-        flash(f'Database error: {str(e)}', 'danger')
+        logger.error("Supplier list error: %s", e)
+        flash('An unexpected error occurred.', 'danger')
         return render_template('suppliers.html', suppliers=[])
 
 
 @supplier_bp.route('/suppliers/add', methods=['POST'])
-@login_required
+@manager_or_admin_required
 def add_supplier():
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
-
     name = request.form.get('name')
     email = request.form.get('email')
     phone = request.form.get('phone')
@@ -68,20 +65,16 @@ def add_supplier():
         conn.close()
         flash('Supplier added successfully.', 'success')
 
-    except pymysql.err.IntegrityError:
-        flash('A supplier with this email already exists.', 'danger')
     except Exception as e:
-        flash(f'Error adding supplier: {str(e)}', 'danger')
+        logger.error("Add supplier error: %s", e)
+        flash('A supplier with this email may already exist.', 'danger')
 
     return redirect(url_for('supplier.supplier_list'))
 
 
 @supplier_bp.route('/suppliers/edit/<int:supplier_id>', methods=['POST'])
-@login_required
+@manager_or_admin_required
 def edit_supplier(supplier_id):
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
-
     name = request.form.get('name')
     email = request.form.get('email')
     phone = request.form.get('phone')
@@ -99,18 +92,15 @@ def edit_supplier(supplier_id):
         conn.close()
         flash('Supplier updated successfully.', 'success')
     except Exception as e:
-        flash(f'Error updating supplier: {str(e)}', 'danger')
+        logger.error("Edit supplier error: %s", e)
+        flash('An unexpected error occurred.', 'danger')
 
     return redirect(url_for('supplier.supplier_list'))
 
 
-@supplier_bp.route('/suppliers/delete/<int:supplier_id>')
-@login_required
+@supplier_bp.route('/suppliers/delete/<int:supplier_id>', methods=['POST'])
 @admin_required
 def delete_supplier(supplier_id):
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
-
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
@@ -124,6 +114,7 @@ def delete_supplier(supplier_id):
         conn.close()
         flash('Supplier deleted successfully.', 'success')
     except Exception as e:
-        flash(f'Error deleting supplier: {str(e)}', 'danger')
+        logger.error("Delete supplier error: %s", e)
+        flash('An unexpected error occurred.', 'danger')
 
     return redirect(url_for('supplier.supplier_list'))

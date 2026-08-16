@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block title %}{{ quotation.quote_number }} - Nexus ERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .status-Draft { background: rgba(148,163,184,0.1); color: #94a3b8; border: 1px solid rgba(148,163,184,0.2); }
+    .status-Sent { background: rgba(59,130,246,0.1); color: #3b82f6; border: 1px solid rgba(59,130,246,0.2); }
+    .status-Accepted { background: rgba(16,185,129,0.1); color: #10b981; border: 1px solid rgba(16,185,129,0.2); }
+    .status-Rejected { background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.2); }
+    .status-Expired { background: rgba(245,158,11,0.1); color: #f59e0b; border: 1px solid rgba(245,158,11,0.2); }
+    .status-Converted { background: rgba(139,92,246,0.1); color: #8b5cf6; border: 1px solid rgba(139,92,246,0.2); }
+    .info-box { background: rgba(255,255,255,0.02); border: 1px solid var(--card-border); border-radius: 14px; padding: 16px; }
+    .info-label { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+    .info-value { font-size: 15px; color: white; font-weight: 600; }
+    .summary-line { display: flex; justify-content: space-between; padding: 10px 0; font-size: 14px; }
+    .summary-line.total { border-top: 2px solid var(--accent-blue); margin-top: 10px; padding-top: 14px; font-weight: 800; font-size: 20px; color: var(--accent-blue); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="header-section animate-up">
+    <div>
+        <div class="d-flex align-items-center gap-3 mb-2">
+            <h1 class="page-title mb-0">{{ quotation.quote_number }}</h1>
+            <span class="status-badge status-{{ quotation.status }}">{{ quotation.status }}</span>
+        </div>
+        <div class="text-secondary">{{ quotation.subject }}</div>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+        <a href="{{ url_for('quotation.quotation_list') }}" class="btn btn-sm" style="background:rgba(148,163,184,0.1);border:1px solid rgba(148,163,184,0.2);color:var(--text-secondary);border-radius:10px;">
+            <i class="bi bi-arrow-left me-1"></i> Back
+        </a>
+        {% if quotation.status in ('Draft', 'Sent') %}
+        <a href="{{ url_for('quotation.quotation_edit', quote_id=quotation.quote_id) }}" class="btn btn-sm" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);color:var(--accent-blue);border-radius:10px;font-weight:600;">
+            <i class="bi bi-pencil me-1"></i> Edit
+        </a>
+        {% endif %}
+        <a href="{{ url_for('quotation.quotation_pdf', quote_id=quotation.quote_id) }}" class="btn btn-sm" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:var(--accent-red);border-radius:10px;font-weight:600;">
+            <i class="bi bi-file-earmark-pdf me-1"></i> Download PDF
+        </a>
+    </div>
+</div>
+
+<div class="row g-4 animate-up delay-1">
+    <!-- Left: Details -->
+    <div class="col-lg-8">
+        <!-- Customer & Quote Info -->
+        <div class="glass-card mb-4">
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <h6 class="text-white fw-bold mb-3"><i class="bi bi-person me-2" style="color:var(--accent-blue);"></i>Customer</h6>
+                    <div class="info-box">
+                        <div class="info-label">Name</div>
+                        <div class="info-value">{{ quotation.customer_name or 'N/A' }}</div>
+                        {% if quotation.customer_email %}
+                        <div class="info-label mt-2">Email</div>
+                        <div class="info-value" style="font-size:13px;">{{ quotation.customer_email }}</div>
+                        {% endif %}
+                        {% if quotation.customer_phone %}
+                        <div class="info-label mt-2">Phone</div>
+                        <div class="info-value" style="font-size:13px;">{{ quotation.customer_phone }}</div>
+                        {% endif %}
+                        {% if quotation.customer_address %}
+                        <div class="info-label mt-2">Address</div>
+                        <div class="info-value" style="font-size:13px;">{{ quotation.customer_address }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="text-white fw-bold mb-3"><i class="bi bi-info-circle me-2" style="color:var(--accent-blue);"></i>Details</h6>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="info-box">
+                                <div class="info-label">Created By</div>
+                                <div class="info-value" style="font-size:13px;">{{ quotation.created_by_name }}</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="info-box">
+                                <div class="info-label">Created On</div>
+                                <div class="info-value" style="font-size:13px;">{{ quotation.created_at }}</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="info-box">
+                                <div class="info-label">Valid Until</div>
+                                <div class="info-value" style="font-size:13px;">{{ quotation.valid_until }}</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="info-box">
+                                <div class="info-label">Quote Number</div>
+                                <div class="info-value" style="font-size:13px;color:var(--accent-blue);">{{ quotation.quote_number }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Line Items -->
+        <div class="glass-card mb-4">
+            <h6 class="text-white fw-bold mb-4"><i class="bi bi-list-ul me-2" style="color:var(--accent-blue);"></i>Line Items</h6>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Product</th>
+                            <th>SKU</th>
+                            <th>Qty</th>
+                            <th>Unit Price</th>
+                            <th>Discount</th>
+                            <th class="text-end">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                        <tr>
+                            <td class="text-secondary">{{ loop.index }}</td>
+                            <td class="text-white fw-bold">{{ item.product_name or 'Unknown' }}</td>
+                            <td class="text-secondary">{{ item.sku or '-' }}</td>
+                            <td class="text-white">{{ item.quantity }}</td>
+                            <td class="text-white">{{ item.unit_price|indian_currency }}</td>
+                            <td class="text-danger">{{ item.discount|indian_currency }}</td>
+                            <td class="text-end text-success fw-bold">{{ item.line_total|indian_currency }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Notes & Terms -->
+        {% if quotation.notes or quotation.terms %}
+        <div class="glass-card mb-4">
+            <div class="row g-4">
+                {% if quotation.notes %}
+                <div class="col-md-6">
+                    <h6 class="text-white fw-bold mb-2"><i class="bi bi-journal-text me-2" style="color:var(--accent-blue);"></i>Notes</h6>
+                    <div class="info-box" style="white-space:pre-wrap;font-size:13px;color:var(--text-secondary);">{{ quotation.notes }}</div>
+                </div>
+                {% endif %}
+                {% if quotation.terms %}
+                <div class="col-md-6">
+                    <h6 class="text-white fw-bold mb-2"><i class="bi bi-shield-check me-2" style="color:var(--accent-blue);"></i>Terms & Conditions</h6>
+                    <div class="info-box" style="white-space:pre-wrap;font-size:13px;color:var(--text-secondary);">{{ quotation.terms }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Right: Summary & Actions -->
+    <div class="col-lg-4">
+        <div class="glass-card mb-4" style="position:sticky;top:20px;">
+            <h6 class="text-white fw-bold mb-4"><i class="bi bi-receipt me-2" style="color:var(--accent-blue);"></i>Financial Summary</h6>
+
+            <div class="summary-line">
+                <span class="text-secondary">Subtotal</span>
+                <span class="text-white fw-bold">{{ quotation.subtotal|indian_currency }}</span>
+            </div>
+            <div class="summary-line">
+                <span class="text-secondary">Discount ({{ quotation.discount_pct }}%)</span>
+                <span style="color:var(--accent-red);">- {{ quotation.discount_amount|indian_currency }}</span>
+            </div>
+            <div class="summary-line">
+                <span class="text-secondary">Tax ({{ quotation.tax_pct }}%)</span>
+                <span class="text-white">{{ quotation.tax_amount|indian_currency }}</span>
+            </div>
+            <div class="summary-line total">
+                <span>Grand Total</span>
+                <span>{{ quotation.grand_total|indian_currency }}</span>
+            </div>
+
+            <!-- Status Actions -->
+            <div class="mt-4">
+                {% if quotation.status == 'Draft' %}
+                <form method="POST" action="{{ url_for('quotation.quotation_status', quote_id=quotation.quote_id) }}" class="mb-2">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <input type="hidden" name="status" value="Sent">
+                    <button type="submit" class="btn w-100" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);color:var(--accent-blue);border-radius:12px;font-weight:600;padding:12px;">
+                        <i class="bi bi-send me-2"></i>Mark as Sent
+                    </button>
+                </form>
+                {% endif %}
+
+                {% if quotation.status == 'Sent' %}
+                <form method="POST" action="{{ url_for('quotation.quotation_status', quote_id=quotation.quote_id) }}" class="mb-2">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <input type="hidden" name="status" value="Accepted">
+                    <button type="submit" class="btn w-100 mb-2" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:var(--accent-green);border-radius:12px;font-weight:600;padding:12px;">
+                        <i class="bi bi-check-lg me-2"></i>Mark as Accepted
+                    </button>
+                </form>
+                <form method="POST" action="{{ url_for('quotation.quotation_status', quote_id=quotation.quote_id) }}" class="mb-2">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <input type="hidden" name="status" value="Rejected">
+                    <button type="submit" class="btn w-100" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:var(--accent-red);border-radius:12px;font-weight:600;padding:12px;">
+                        <i class="bi bi-x-lg me-2"></i>Mark as Rejected
+                    </button>
+                </form>
+                {% endif %}
+
+                {% if quotation.status == 'Accepted' %}
+                <form method="POST" action="{{ url_for('quotation.convert_to_sale', quote_id=quotation.quote_id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <button type="submit" class="btn w-100" style="background:linear-gradient(135deg,var(--accent-blue),var(--accent-purple));color:white;border-radius:12px;font-weight:700;padding:14px;box-shadow:0 8px 20px rgba(59,130,246,0.3);" onclick="return confirm('Convert this quotation to sale(s)? Stock will be deducted.')">
+                        <i class="bi bi-arrow-right-circle me-2"></i>Convert to Sale
+                    </button>
+                </form>
+                {% endif %}
+
+                {% if session.get('role_name') == 'Admin' %}
+                <form method="POST" action="{{ url_for('quotation.quotation_delete', quote_id=quotation.quote_id) }}" class="mt-3">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <button type="submit" class="btn w-100" style="background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.15);color:rgba(239,68,68,0.5);border-radius:12px;font-weight:600;padding:10px;font-size:13px;" onclick="return confirm('Permanently delete this quotation?')">
+                        <i class="bi bi-trash me-1"></i> Delete Quotation
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

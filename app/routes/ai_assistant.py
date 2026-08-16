@@ -2,8 +2,11 @@ from flask import Blueprint, render_template, session, redirect, url_for, jsonif
 from app.utils import login_required, log_audit
 from app.ai.gemini_client import GeminiClient
 from app.ai.data_context import DataContext
+import logging
 
 ai_bp = Blueprint('ai_assistant', __name__)
+
+logger = logging.getLogger(__name__)
 
 
 @ai_bp.route('/ai-chat')
@@ -32,7 +35,8 @@ def ai_chat():
 
         return jsonify(result)
     except Exception as e:
-        return jsonify({'success': False, 'response': f'Service error: {str(e)}'})
+        logger.error("AI chat error: %s", e)
+        return jsonify({'success': False, 'response': 'AI service temporarily unavailable. Please try again later.'})
 
 
 @ai_bp.route('/api/ai/expense/categorize', methods=['POST'])
@@ -57,4 +61,5 @@ def categorize_expense():
         result = client.categorize_expense(description, amount, categories)
         return jsonify({'success': True, 'result': result})
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
+        logger.error("AI categorize error: %s", e)
+        return jsonify({'success': False, 'error': 'Categorization service unavailable.'})

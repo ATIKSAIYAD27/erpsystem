@@ -1,831 +1,449 @@
-<!DOCTYPE html>
-<html lang="en" data-bs-theme="dark">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Executive Overview - Nexus ERP</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        :root {
-            --bg-color: #05070a;
-            --sidebar-bg: #0a0f19;
-            --card-bg: rgba(15, 23, 42, 0.6);
-            --card-border: rgba(255, 255, 255, 0.04);
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --accent-blue: #3b82f6;
-            --accent-purple: #8b5cf6;
-            --accent-green: #10b981;
-            --accent-orange: #f59e0b;
-        }
+{% block title %}Executive Overview - Nexus ERP{% endblock %}
 
-        body {
-            font-family: 'Outfit', sans-serif;
-            background-color: var(--bg-color);
-            background-image: 
-                radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.03) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.03) 0%, transparent 40%);
-            color: var(--text-primary);
-            min-height: 100vh;
-            margin: 0;
-            overflow-x: hidden;
-            background-attachment: fixed;
-        }
+{% block extra_css %}{% endblock %}
 
-        /* Standard Sidebar */
-        .sidebar {
-            width: 280px;
-            height: 100vh;
-            position: fixed;
-            left: 0;
-            top: 0;
-            background: var(--sidebar-bg);
-            border-right: 1px solid var(--card-border);
-            padding: 35px 25px;
-            display: flex;
-            flex-direction: column;
-            z-index: 1000;
-            backdrop-filter: blur(20px);
-        }
-
-        /* Input Fixes */
-        .form-control, .form-select {
-            background-color: rgba(15, 23, 42, 0.6) !important;
-            border: 1px solid var(--card-border) !important;
-            color: white !important;
-        }
-        .form-control:focus, .form-select:focus {
-            background-color: rgba(15, 23, 42, 0.8) !important;
-            box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25) !important;
-        }
-        select option {
-            background-color: #0f172a !important;
-            color: white !important;
-        }
-
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 40px;
-        }
-
-        .brand-icon {
-            width: 45px;
-            height: 45px;
-            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            color: white;
-            box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
-        }
-
-        .brand-text h3 {
-            margin: 0;
-            font-weight: 800;
-            font-size: 22px;
-            background: linear-gradient(to right, #fff, #94a3b8);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .nav-item { margin-bottom: 5px; }
-
-        .nav-link {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 14px 20px;
-            border-radius: 12px;
-            color: var(--text-secondary);
-            font-weight: 500;
-            font-size: 15px;
-            transition: all 0.3s ease;
-            text-decoration: none;
-        }
-
-        .nav-link:hover {
-            color: var(--text-primary);
-            background: rgba(255, 255, 255, 0.05);
-            transform: translateX(5px);
-        }
-
-        .nav-link.active {
-            color: white;
-            background: linear-gradient(to right, rgba(59, 130, 246, 0.1), transparent);
-            border-left: 4px solid var(--accent-blue);
-        }
-
-        .nav-link.active i { color: var(--accent-blue); }
-
-        .logout-btn {
-            margin-top: auto;
-            background: rgba(239, 68, 68, 0.1);
-            color: #ef4444;
-            border: 1px solid rgba(239, 68, 68, 0.2);
-        }
-
-        .logout-btn:hover {
-            background: #ef4444;
-            color: white;
-            transform: translateY(-2px);
-        }
-
-        /* Main Content */
-        .main-wrapper {
-            margin-left: 280px;
-            padding: 40px;
-        }
-
-        .header-section {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 40px;
-        }
-
-        .page-title {
-            font-size: 32px;
-            font-weight: 800;
-            margin: 0;
-            background: linear-gradient(to right, #fff, #94a3b8);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .page-subtitle {
-            color: var(--text-secondary);
-            font-size: 16px;
-            margin-top: 5px;
-        }
-
-        .user-profile {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            background: var(--card-bg);
-            padding: 8px 20px 8px 8px;
-            border-radius: 50px;
-            border: 1px solid var(--card-border);
-            backdrop-filter: blur(10px);
-        }
-
-        .avatar {
-            width: 42px;
-            height: 42px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 800;
-            color: white;
-            box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
-        }
-
-        /* Stat Cards */
-        .stat-card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 28px;
-            padding: 28px;
-            backdrop-filter: blur(15px);
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-8px);
-            border-color: rgba(59, 130, 246, 0.3);
-            background: rgba(30, 41, 59, 0.9);
-        }
-
-        .card-icon-wrapper {
-            width: 54px;
-            height: 54px;
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            margin-bottom: 20px;
-        }
-
-        .blue-glow { background: rgba(59, 130, 246, 0.1); color: var(--accent-blue); }
-        .green-glow { background: rgba(16, 185, 129, 0.1); color: var(--accent-green); }
-        .orange-glow { background: rgba(245, 158, 11, 0.1); color: var(--accent-orange); }
-        .purple-glow { background: rgba(139, 92, 246, 0.1); color: var(--accent-purple); }
-
-        .stat-value {
-            font-size: 32px;
-            font-weight: 800;
-            color: white;
-            margin-bottom: 4px;
-        }
-
-        .stat-label {
-            color: var(--text-secondary);
-            font-weight: 500;
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        /* Activity Feed */
-        .activity-feed {
-            scrollbar-width: none; /* Firefox */
-        }
-        .activity-feed::-webkit-scrollbar { display: none; }
-
-        .activity-item {
-            padding: 15px;
-            border-radius: 16px;
-            transition: 0.3s;
-            border: 1px solid transparent;
-        }
-        .activity-item:hover {
-            background: rgba(255, 255, 255, 0.03);
-            border-color: rgba(255, 255, 255, 0.05);
-        }
-
-        /* Chart Styling */
-        .chart-container {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 28px;
-            padding: 30px;
-            backdrop-filter: blur(15px);
-        }
-
-        .glass-card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 28px;
-            padding: 30px;
-            backdrop-filter: blur(15px);
-        }
-
-        @keyframes fadeSlideUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .animate-up {
-            animation: fadeSlideUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-        
-        .delay-1 { animation-delay: 0.1s; }
-        .delay-2 { animation-delay: 0.2s; }
-        .delay-3 { animation-delay: 0.3s; }
-        .delay-4 { animation-delay: 0.4s; }
-        .delay-5 { animation-delay: 0.5s; }
-
-        /* Quick Action Bar */
-        .quick-actions {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-        .action-btn {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            color: var(--text-primary);
-            padding: 10px 20px;
-            border-radius: 14px;
-            font-size: 14px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            transition: 0.3s;
-            text-decoration: none;
-        }
-        .action-btn:hover {
-            background: var(--accent-blue);
-            color: white;
-            border-color: var(--accent-blue);
-            transform: translateY(-3px);
-            box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
-        }
-    </style>
-</head>
-
-<body>
-    <!-- Sidebar -->
-    <nav class="sidebar">
-        <div class="brand">
-            <div class="brand-icon">
-                <i class="bi bi-building-fill"></i>
+{% block content %}
+<div class="header-section animate-up">
+    <div>
+        <h1 class="page-title">Executive Dashboard</h1>
+        <div class="page-subtitle">Welcome back, {{ session.get('name', 'Admin') }}. Here's your enterprise status.</div>
+    </div>
+    <div class="d-flex align-items-center gap-4">
+        {% include 'header_search.html' %}
+        <a href="/settings" class="user-profile">
+            <div class="avatar">{{ session.get('name', 'A')[0] | upper }}</div>
+            <div class="user-profile-info">
+                <div class="user-profile-name">{{ session.get('name', 'Admin User') }}</div>
+                <div class="user-profile-role">{{ session.get('role_name', 'System Admin') }}</div>
             </div>
-            <div class="brand-text">
-                <h3>Nexus ERP</h3>
-            </div>
-        </div>
-
-        <div class="nav-item">
-            <a href="/dashboard" class="nav-link active">
-                <i class="bi bi-grid-1x2-fill"></i> Overview
-            </a>
-        </div>
-        <div class="nav-item">
-            <a href="/employee" class="nav-link">
-                <i class="bi bi-people-fill"></i> Workforce
-            </a>
-        </div>
-        <div class="nav-item">
-            <a href="/attendance" class="nav-link">
-                <i class="bi bi-clock-history"></i> Attendance
-            </a>
-        </div>
-        <div class="nav-item">
-            <a href="/leaves" class="nav-link">
-                <i class="bi bi-calendar2-week"></i> Leave Portal
-            </a>
-        </div>
-        <div class="nav-item">
-            <a href="/payroll" class="nav-link">
-                <i class="bi bi-cash-stack"></i> Payroll
-            </a>
-        </div>
-        <div class="nav-item">
-            <a href="/mail" class="nav-link">
-                <i class="bi bi-envelope-at-fill"></i> Nexus Mail
-                {% if mail_count > 0 %}
-                <span class="badge rounded-pill bg-primary ms-auto" style="font-size: 10px;">{{ mail_count }}</span>
-                {% endif %}
-            </a>
-        </div>
-        <div class="nav-item">
-            <a href="/finance" class="nav-link">
-                <i class="bi bi-wallet2"></i> Finance Hub
-            </a>
-        </div>
-        <div class="nav-item">
-            <a href="/expense-reports" class="nav-link">
-                <i class="bi bi-file-earmark-bar-graph"></i> Expense Reports
-            </a>
-        </div>
-        <div class="nav-item">
-            <a href="/inventory" class="nav-link">
-                <i class="bi bi-box-seam-fill"></i> Inventory
-            </a>
-        </div>
-        <div class="nav-item">
-            <a href="/sales" class="nav-link">
-                <i class="bi bi-graph-up-arrow"></i> Sales & CRM
-            </a>
-        </div>
-        <div class="nav-item">
-            <a href="/customers" class="nav-link">
-                <i class="bi bi-person-lines-fill"></i> Customers
-            </a>
-        </div>
-        <div class="nav-item">
-            <a href="/suppliers" class="nav-link">
-                <i class="bi bi-truck"></i> Suppliers
-            </a>
-        </div>
-        <div class="nav-item">
-            <a href="/purchase-orders" class="nav-link">
-                <i class="bi bi-cart-check"></i> Purchase Orders
-            </a>
-        </div>
-        <div class="nav-item">
-            <a href="/projects" class="nav-link">
-                <i class="bi bi-kanban"></i> Projects
-            </a>
-        </div>
-        <div class="nav-item">
-            <a href="/ai-chat" class="nav-link">
-                <i class="bi bi-robot"></i> AI Assistant
-            </a>
-        </div>
-        <div class="nav-item">
-            <a href="/ai-analytics" class="nav-link">
-                <i class="bi bi-bar-chart-line-fill"></i> AI Analytics
-            </a>
-        </div>
-        {% if session.get('role_name') == 'Admin' %}<div class="nav-item"><a href="/company-settings" class="nav-link"><i class="bi bi-building-gear"></i> Company Settings</a></div>{% endif %}
-        {% if session.get('role_name') == 'Admin' %}<div class="nav-item"><a href="/audit-log" class="nav-link"><i class="bi bi-journal-text"></i> Audit Log</a></div>{% endif %}
-        <div class="nav-item">
-            <a href="/notifications" class="nav-link">
-                <i class="bi bi-bell"></i> Alerts
-                {% if notif_count > 0 %}
-                <span class="badge rounded-pill bg-danger ms-auto" style="font-size: 10px;">{{ notif_count }}</span>
-                {% endif %}
-            </a>
-        </div>
-        <div class="nav-item">
-            <a href="/settings" class="nav-link">
-                <i class="bi bi-gear-fill"></i> Settings
-            </a>
-        </div>
-
-        <a href="{{ url_for('auth.logout') }}" class="nav-link logout-btn">
-            <i class="bi bi-power"></i> Secure Logout
         </a>
-    </nav>
+    </div>
+</div>
 
-    <!-- Main Content -->
-    <main class="main-wrapper">
-        <div class="header-section animate-up">
-            <div>
-                <h1 class="page-title">Executive Dashboard</h1>
-                <div class="page-subtitle">Welcome back, {{ session.get('name', 'Admin') }}. Here's your enterprise status.</div>
+<!-- Quick Action Bar -->
+<div class="quick-actions animate-up delay-1">
+    <a href="/employee" class="action-btn"><i class="bi bi-person-plus"></i> Add Staff</a>
+    <a href="/sales" class="action-btn"><i class="bi bi-cart-plus"></i> New Sale</a>
+    <a href="/projects" class="action-btn"><i class="bi bi-plus-square"></i> New Task</a>
+</div>
+
+<!-- Metrics Grid -->
+<div class="row g-4 mb-5">
+    <div class="col-xl-3 col-lg-6">
+        <div class="stat-card animate-up delay-1">
+            <div class="card-icon-wrapper blue-glow">
+                <i class="bi bi-people-fill"></i>
             </div>
-            <div class="d-flex align-items-center gap-4">
-                {% include 'header_search.html' %}
-                <a href="/settings" class="user-profile" style="text-decoration: none;">
-                    <div class="avatar">{{ session.get('name', 'A')[0] | upper }}</div>
-                    <div style="padding-right: 10px;">
-                        <div style="font-size: 14px; font-weight: 700; color: white;">{{ session.get('name', 'Admin User') }}</div>
-                        <div style="font-size: 12px; color: var(--text-secondary);">{{ session.get('role_name', 'System Admin') }}</div>
-                    </div>
-                </a>
+            <h2 class="stat-value">{{ total_employees }}</h2>
+            <div class="stat-label">Active Workforce</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-lg-6">
+        <div class="stat-card animate-up delay-2">
+            <div class="card-icon-wrapper green-glow">
+                <i class="bi bi-currency-rupee"></i>
+            </div>
+            <h2 class="stat-value">{{ total_revenue|indian_currency }}</h2>
+            <div class="stat-label">Gross Revenue</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-lg-6">
+        <div class="stat-card animate-up delay-3">
+            <div class="card-icon-wrapper orange-glow">
+                <i class="bi bi-box-seam-fill"></i>
+            </div>
+            <h2 class="stat-value">{{ total_products }}</h2>
+            <div class="stat-label">Stock Items</div>
+            {% if low_stock_count > 0 %}
+            <div class="stat-warning">
+                <i class="bi bi-exclamation-triangle-fill"></i> {{ low_stock_count }} low stock
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-xl-3 col-lg-6">
+        <div class="stat-card animate-up delay-4">
+            <div class="card-icon-wrapper purple-glow">
+                <i class="bi bi-lightning-charge-fill"></i>
+            </div>
+            <h2 class="stat-value">{{ pending_tasks }}</h2>
+            <div class="stat-label">Pending Actions</div>
+        </div>
+    </div>
+</div>
+
+<!-- Finance Row -->
+<div class="row g-4 mb-5">
+    <div class="col-xl-4 col-lg-6">
+        <div class="stat-card animate-up delay-2">
+            <div class="card-icon-wrapper green-glow">
+                <i class="bi bi-graph-up-arrow"></i>
+            </div>
+            <h2 class="stat-value stat-value-sm">{{ net_profit|indian_currency }}</h2>
+            <div class="stat-label">Net Profit</div>
+        </div>
+    </div>
+    <div class="col-xl-4 col-lg-6">
+        <div class="stat-card animate-up delay-3">
+            <div class="card-icon-wrapper orange-glow">
+                <i class="bi bi-receipt"></i>
+            </div>
+            <h2 class="stat-value stat-value-sm">{{ total_expenses|indian_currency }}</h2>
+            <div class="stat-label">Total Expenses</div>
+        </div>
+    </div>
+    <div class="col-xl-4 col-lg-6">
+        <div class="stat-card animate-up delay-4">
+            <div class="card-icon-wrapper blue-glow">
+                <i class="bi bi-cash-stack"></i>
+            </div>
+            <h2 class="stat-value stat-value-sm">{{ total_payroll|indian_currency }}</h2>
+            <div class="stat-label">Total Payroll</div>
+        </div>
+    </div>
+</div>
+
+<!-- Analytics Row -->
+<div class="row g-4 mb-5">
+    <div class="col-lg-8 animate-up delay-2">
+        <div class="glass-card" style="height: 400px; padding: 25px;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h5 class="text-white mb-0" style="font-weight: 700;">Revenue Velocity</h5>
+                    <span class="text-secondary small">Visualizing growth patterns</span>
+                </div>
+                <div class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3">STABLE FEED</div>
+            </div>
+            <div style="height: 280px;">
+                <canvas id="salesChart"></canvas>
             </div>
         </div>
-
-        <!-- Quick Action Bar -->
-        <div class="quick-actions animate-up delay-1">
-            <a href="/employee" class="action-btn"><i class="bi bi-person-plus"></i> Add Staff</a>
-            <a href="/sales" class="action-btn"><i class="bi bi-cart-plus"></i> New Sale</a>
-            <a href="/projects" class="action-btn"><i class="bi bi-plus-square"></i> New Task</a>
-        </div>
-
-        <!-- Metrics Grid -->
-        <div class="row g-4 mb-5">
-            <div class="col-xl-3 col-lg-6">
-                <div class="stat-card animate-up delay-1">
-                    <div class="card-icon-wrapper blue-glow">
-                        <i class="bi bi-people-fill"></i>
-                    </div>
-                    <h2 class="stat-value">{{ total_employees }}</h2>
-                    <div class="stat-label">Active Workforce</div>
-                </div>
+    </div>
+    <div class="col-lg-4 animate-up delay-3">
+        <div class="glass-card" style="height: 400px; padding: 25px;">
+            <h5 class="text-white mb-4" style="font-weight: 700;">Stock Distribution</h5>
+            <div style="height: 250px;">
+                <canvas id="stockChart"></canvas>
             </div>
-            <div class="col-xl-3 col-lg-6">
-                <div class="stat-card animate-up delay-2">
-                    <div class="card-icon-wrapper green-glow">
-                        <i class="bi bi-currency-rupee"></i>
-                    </div>
-                    <h2 class="stat-value">{{ total_revenue|indian_currency }}</h2>
-                    <div class="stat-label">Gross Revenue</div>
-                </div>
-            </div>
-            <div class="col-xl-3 col-lg-6">
-                <div class="stat-card animate-up delay-3">
-                    <div class="card-icon-wrapper orange-glow">
-                        <i class="bi bi-box-seam-fill"></i>
-                    </div>
-                    <h2 class="stat-value">{{ total_products }}</h2>
-                    <div class="stat-label">Stock Items</div>
-                    {% if low_stock_count > 0 %}
-                    <div style="font-size: 12px; color: var(--accent-orange); margin-top: 6px;">
-                        <i class="bi bi-exclamation-triangle"></i> {{ low_stock_count }} low stock
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-            <div class="col-xl-3 col-lg-6">
-                <div class="stat-card animate-up delay-4">
-                    <div class="card-icon-wrapper purple-glow">
-                        <i class="bi bi-lightning-charge-fill"></i>
-                    </div>
-                    <h2 class="stat-value">{{ pending_tasks }}</h2>
-                    <div class="stat-label">Pending Actions</div>
-                </div>
+            <div class="mt-4 text-center">
+                <span class="text-secondary small">Inventory Health Index: </span>
+                <span class="text-success fw-bold">Optimum</span>
             </div>
         </div>
+    </div>
+</div>
 
-        <!-- Finance Row -->
-        <div class="row g-4 mb-5">
-            <div class="col-xl-4 col-lg-6">
-                <div class="stat-card animate-up delay-2">
-                    <div class="card-icon-wrapper green-glow">
-                        <i class="bi bi-graph-up-arrow"></i>
-                    </div>
-                    <h2 class="stat-value" style="font-size: 24px;">{{ total_revenue|indian_currency }}</h2>
-                    <div class="stat-label">Total Sales</div>
+<!-- AI Insights Row -->
+<div class="row g-4 mb-5">
+    <div class="col-lg-6 animate-up delay-3">
+        <div class="glass-card ai-insight-card">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="ai-insight-icon" style="background: rgba(59,130,246,0.1); color: var(--accent-blue);">
+                    <i class="bi bi-robot"></i>
+                </div>
+                <div>
+                    <h6 class="text-white mb-0 fw-bold">AI Quick Insights</h6>
+                    <span class="ai-insight-label" style="color: var(--accent-blue);">GEMINI POWERED</span>
                 </div>
             </div>
-            <div class="col-xl-4 col-lg-6">
-                <div class="stat-card animate-up delay-3">
-                    <div class="card-icon-wrapper orange-glow">
-                        <i class="bi bi-receipt"></i>
-                    </div>
-                    <h2 class="stat-value" style="font-size: 24px;">{{ total_expenses|indian_currency }}</h2>
-                    <div class="stat-label">Total Expenses</div>
+            <div id="aiQuickInsights" class="text-secondary" style="font-size: 13.5px; line-height: 1.6;">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                    <span>Generating AI insights...</span>
                 </div>
             </div>
-            <div class="col-xl-4 col-lg-6">
-                <div class="stat-card animate-up delay-4">
-                    <div class="card-icon-wrapper blue-glow">
-                        <i class="bi bi-cash-stack"></i>
-                    </div>
-                    <h2 class="stat-value" style="font-size: 24px;">{{ total_payroll|indian_currency }}</h2>
-                    <div class="stat-label">Total Payroll</div>
+            <a href="/ai-chat" class="btn btn-sm btn-ai mt-3">
+                <i class="bi bi-chat-dots"></i> Ask Nexus AI
+            </a>
+        </div>
+    </div>
+    <div class="col-lg-6 animate-up delay-4">
+        <div class="glass-card">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="ai-insight-icon" style="background: rgba(16,185,129,0.1); color: var(--accent-green);">
+                    <i class="bi bi-lightbulb"></i>
                 </div>
+                <div>
+                    <h6 class="text-white mb-0 fw-bold">Smart Recommendations</h6>
+                    <span class="ai-insight-label" style="color: var(--accent-green);">AI POWERED</span>
+                </div>
+            </div>
+            <div id="aiRecommendations" class="text-secondary" style="font-size: 13.5px; line-height: 1.6;">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <div class="spinner-border spinner-border-sm text-success" role="status"></div>
+                    <span>Analyzing your data...</span>
+                </div>
+            </div>
+            <a href="/ai-analytics" class="btn btn-sm btn-ai-green mt-3">
+                <i class="bi bi-bar-chart-line"></i> View Full Analytics
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- System Activity Log -->
+    <div class="col-lg-7 animate-up delay-5">
+        <div class="chart-container h-100">
+            <h5 class="text-white fw-bold mb-4">Real-time Activity Log</h5>
+            <div class="activity-feed" style="max-height: 400px; overflow-y: auto;">
+                {% if recent_activity %}
+                {% for log in recent_activity %}
+                <div class="activity-item d-flex gap-3 mb-2">
+                    <div class="flex-shrink-0">
+                        <div class="avatar" style="width: 36px; height: 36px; font-size: 14px; background: 
+                                {% if log.type == 'sale' %} var(--accent-green) 
+                                {% elif log.type == 'attendance' %} var(--accent-blue)
+                                {% else %} var(--accent-purple) {% endif %};">
+                            <i class="bi {% if log.type == 'sale' %}bi-cart-check{% elif log.type == 'attendance' %}bi-person-badge{% else %}bi-list-task{% endif %}"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="text-white small fw-bold">{{ log.message }}</div>
+                        <div class="text-secondary" style="font-size: 11px;">{{ log.timestamp }}</div>
+                    </div>
+                    <div class="text-secondary small">Just now</div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="text-center py-5 text-secondary">
+                    <div style="font-size: 36px; opacity: 0.3; margin-bottom: 12px;"><i class="bi bi-inbox"></i></div>
+                    <div>No recent operations logged.</div>
+                </div>
+                {% endif %}
             </div>
         </div>
+    </div>
 
-        <!-- Analytics Row -->
-        <div class="row g-4 mb-5">
-            <div class="col-lg-8 animate-up delay-2">
-                <div class="glass-card" style="height: 400px; padding: 25px;">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <div>
-                            <h5 class="text-white mb-0" style="font-weight: 700;">Revenue Velocity</h5>
-                            <span class="text-secondary small">Visualizing growth patterns</span>
-                        </div>
-                        <div class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3">STABLE FEED</div>
-                    </div>
-                    <div style="height: 280px;">
-                        <canvas id="salesChart"></canvas>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-4 animate-up delay-3">
-                <div class="glass-card" style="height: 400px; padding: 25px;">
-                    <h5 class="text-white mb-4" style="font-weight: 700;">Stock Distribution</h5>
-                    <div style="height: 250px;">
-                        <canvas id="stockChart"></canvas>
-                    </div>
-                    <div class="mt-4 text-center">
-                        <span class="text-secondary small">Inventory Health Index: </span>
-                        <span class="text-success fw-bold">Optimum</span>
-                    </div>
-                </div>
+    <!-- Distribution Chart -->
+    <div class="col-lg-5 animate-up delay-5">
+        <div class="chart-container h-100">
+            <h5 class="text-white fw-bold mb-4">Operational Distribution</h5>
+            <div style="height: 300px; position: relative;">
+                <canvas id="mainChart"></canvas>
             </div>
         </div>
+    </div>
+</div>
+{% endblock %}
 
-        <!-- AI Insights Row -->
-        <div class="row g-4 mb-5">
-            <div class="col-lg-6 animate-up delay-3">
-                <div class="glass-card" style="padding: 25px; border: 1px solid rgba(59,130,246,0.2); background: linear-gradient(135deg, rgba(59,130,246,0.06), rgba(139,92,246,0.06));">
-                    <div class="d-flex align-items-center gap-3 mb-3">
-                        <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(59,130,246,0.1); display: flex; align-items: center; justify-content: center; color: var(--accent-blue); font-size: 20px;">
-                            <i class="bi bi-robot"></i>
-                        </div>
-                        <div>
-                            <h6 class="text-white mb-0" style="font-weight: 700;">AI Quick Insights</h6>
-                            <span style="font-size: 11px; color: var(--accent-blue); font-weight: 600;">GEMINI POWERED</span>
-                        </div>
-                    </div>
-                    <div id="aiQuickInsights" style="color: var(--text-secondary); font-size: 13.5px; line-height: 1.6;">
-                        <div class="d-flex align-items-center gap-2 mb-2">
-                            <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
-                            <span>Generating AI insights...</span>
-                        </div>
-                    </div>
-                    <a href="/ai-chat" class="btn btn-sm mt-3" style="background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); color: var(--accent-blue); border-radius: 10px; font-weight: 600; font-size: 12px;">
-                        <i class="bi bi-chat-dots"></i> Ask Nexus AI
-                    </a>
-                </div>
-            </div>
-            <div class="col-lg-6 animate-up delay-4">
-                <div class="glass-card" style="padding: 25px;">
-                    <div class="d-flex align-items-center gap-3 mb-3">
-                        <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(16,185,129,0.1); display: flex; align-items: center; justify-content: center; color: var(--accent-green); font-size: 20px;">
-                            <i class="bi bi-lightbulb"></i>
-                        </div>
-                        <div>
-                            <h6 class="text-white mb-0" style="font-weight: 700;">Smart Recommendations</h6>
-                            <span style="font-size: 11px; color: var(--accent-green); font-weight: 600;">AI POWERED</span>
-                        </div>
-                    </div>
-                    <div id="aiRecommendations" style="color: var(--text-secondary); font-size: 13.5px; line-height: 1.6;">
-                        <div class="d-flex align-items-center gap-2 mb-2">
-                            <div class="spinner-border spinner-border-sm text-success" role="status"></div>
-                            <span>Analyzing your data...</span>
-                        </div>
-                    </div>
-                    <a href="/ai-analytics" class="btn btn-sm mt-3" style="background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); color: var(--accent-green); border-radius: 10px; font-weight: 600; font-size: 12px;">
-                        <i class="bi bi-bar-chart-line"></i> View Full Analytics
-                    </a>
-                </div>
-            </div>
-        </div>
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        window.nexusCharts = window.nexusCharts || {};
 
-        <div class="row g-4 mb-4">
-            <!-- System Activity Log -->
-            <div class="col-lg-7 animate-up delay-5">
-                <div class="chart-container h-100">
-                    <h5 class="text-white fw-bold mb-4">Real-time Activity Log</h5>
-                    <div class="activity-feed" style="max-height: 400px; overflow-y: auto;">
-                        {% if recent_activity %}
-                        {% for log in recent_activity %}
-                        <div class="activity-item d-flex gap-3 mb-2">
-                            <div class="flex-shrink-0">
-                                <div class="avatar" style="width: 36px; height: 36px; font-size: 16px; background: 
-                                        {% if log.type == 'sale' %} var(--accent-green) 
-                                        {% elif log.type == 'attendance' %} var(--accent-blue)
-                                        {% else %} var(--accent-purple) {% endif %};">
-                                    <i class="bi {% if log.type == 'sale' %}bi-cart-check{% elif log.type == 'attendance' %}bi-person-badge{% else %}bi-list-task{% endif %}"></i>
-                                </div>
-                            </div>
-                            <div class="flex-grow-1">
-                                <div class="text-white small fw-bold">{{ log.message }}</div>
-                                <div class="text-secondary" style="font-size: 11px;">{{ log.timestamp }}</div>
-                            </div>
-                            <div class="text-secondary small">Just now</div>
-                        </div>
-                        {% endfor %}
-                        {% else %}
-                        <div class="text-center py-5 text-secondary">No recent operations logged.</div>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
+        Chart.defaults.color = '#94a3b8';
+        Chart.defaults.font.family = "'Outfit', sans-serif";
 
-            <!-- Distribution Chart -->
-            <div class="col-lg-5 animate-up delay-5">
-                <div class="chart-container h-100">
-                    <h5 class="text-white fw-bold mb-4">Operational Distribution</h5>
-                    <div style="height: 300px; position: relative;">
-                        <canvas id="mainChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
+        function createSalesChart() {
+            const ctx = document.getElementById('salesChart');
+            if (!ctx) return;
+            
+            if (window.nexusCharts.sales) window.nexusCharts.sales.destroy();
 
-    {% include 'ai_chat_widget.html' %}
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Global Chart Instance Manager to prevent "Spinning/Looping" issue
-            window.nexusCharts = window.nexusCharts || {};
-
-            // Global Chart Defaults
-            Chart.defaults.color = '#94a3b8';
-            Chart.defaults.font.family = "'Outfit', sans-serif";
-
-            function createSalesChart() {
-                const ctx = document.getElementById('salesChart');
-                if (!ctx) return;
-                
-                if (window.nexusCharts.sales) window.nexusCharts.sales.destroy();
-
-                window.nexusCharts.sales = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: {{ (chart_labels or ['No Data']) | tojson | safe }},
-                        datasets: [{
-                            label: 'Revenue',
-                            data: {{ (chart_data or [0]) | tojson | safe }},
-                            borderColor: '#3b82f6',
-                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                            fill: true,
-                            tension: 0.4,
-                            borderWidth: 3,
-                            pointRadius: 4,
-                            pointBackgroundColor: '#3b82f6',
-                            pointBorderColor: 'rgba(255,255,255,0.1)',
-                            pointBorderWidth: 2
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: {
-                            y: { 
-                                display: true, 
-                                grid: { color: 'rgba(255,255,255,0.03)' },
-                                ticks: { callback: (val) => 'Rs. ' + (val/1000) + 'k' }
-                            },
-                            x: { grid: { display: false } }
-                        }
-                    }
-                });
-            }
-
-            function createStockChart() {
-                const ctx = document.getElementById('stockChart');
-                if (!ctx) return;
-
-                if (window.nexusCharts.stock) window.nexusCharts.stock.destroy();
-
-                window.nexusCharts.stock = new Chart(ctx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['In Stock', 'Low', 'Out'],
-                        datasets: [{
-                            data: [{{ total_products or 0 }}, {{ low_stock_count or 0 }}, 2],
-                            backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
-                            borderWidth: 0,
-                            hoverOffset: 15
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { 
-                            legend: { 
-                                position: 'bottom', 
-                                labels: { color: '#94a3b8', boxWidth: 10, padding: 15, font: { size: 11 } } 
-                            } 
+            window.nexusCharts.sales = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: {{ (chart_labels or ['No Data']) | tojson | safe }},
+                    datasets: [{
+                        label: 'Revenue',
+                        data: {{ (chart_data or [0]) | tojson | safe }},
+                        borderColor: '#3b82f6',
+                        backgroundColor: (ctx) => {
+                            const gradient = ctx.chart.ctx.createLinearGradient(0, 0, 0, 280);
+                            gradient.addColorStop(0, 'rgba(59, 130, 246, 0.15)');
+                            gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
+                            return gradient;
                         },
-                        cutout: '75%'
-                    }
-                });
-            }
-
-            function createMainChart() {
-                const ctx = document.getElementById('mainChart');
-                if (!ctx) return;
-
-                if (window.nexusCharts.main) window.nexusCharts.main.destroy();
-
-                window.nexusCharts.main = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: ['Sales', 'Expenses', 'Payroll', 'Products', 'Tasks'],
-                        datasets: [{
-                            label: 'Distribution',
-                            data: [{{ total_revenue or 0 }}, {{ total_expenses or 0 }}, {{ total_payroll or 0 }}, {{ total_products or 0 }}, {{ pending_tasks or 0 }}],
-                            backgroundColor: [
-                                'rgba(16, 185, 129, 0.7)',
-                                'rgba(245, 158, 11, 0.7)',
-                                'rgba(59, 130, 246, 0.7)',
-                                'rgba(139, 92, 246, 0.7)',
-                                'rgba(236, 72, 153, 0.7)'
-                            ],
-                            borderColor: ['#10b981', '#f59e0b', '#3b82f6', '#8b5cf6', '#ec4899'],
-                            borderWidth: 2,
-                            borderRadius: 8,
-                            borderSkipped: false
-                        }]
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 2.5,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#3b82f6',
+                        pointBorderColor: 'rgba(15, 23, 42, 0.8)',
+                        pointBorderWidth: 2,
+                        pointHoverRadius: 6,
+                        pointHoverBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { 
+                            display: true, 
+                            grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false },
+                            ticks: { callback: (val) => 'Rs. ' + (val/1000) + 'k', font: { size: 11 } },
+                            border: { display: false }
+                        },
+                        x: { 
+                            grid: { display: false },
+                            ticks: { font: { size: 11 } },
+                            border: { display: false }
+                        }
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: {
-                            y: {
-                                grid: { color: 'rgba(255,255,255,0.03)' },
-                                ticks: { callback: (val) => 'Rs. ' + (val/1000) + 'k' }
-                            },
-                            x: { grid: { display: false } }
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+
+        function createStockChart() {
+            const ctx = document.getElementById('stockChart');
+            if (!ctx) return;
+
+            if (window.nexusCharts.stock) window.nexusCharts.stock.destroy();
+
+            window.nexusCharts.stock = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['In Stock', 'Low', 'Out'],
+                    datasets: [{
+                        data: [{{ total_products or 0 }}, {{ low_stock_count or 0 }}, 2],
+                        backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+                        borderWidth: 0,
+                        hoverOffset: 12,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { 
+                            position: 'bottom', 
+                            labels: { 
+                                color: '#94a3b8', 
+                                boxWidth: 10, 
+                                padding: 16, 
+                                font: { size: 11, family: "'Outfit', sans-serif" },
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            } 
+                        } 
+                    },
+                    cutout: '72%'
+                }
+            });
+        }
+
+        function createMainChart() {
+            const ctx = document.getElementById('mainChart');
+            if (!ctx) return;
+
+            if (window.nexusCharts.main) window.nexusCharts.main.destroy();
+
+            window.nexusCharts.main = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Sales', 'Expenses', 'Payroll', 'Products', 'Tasks'],
+                    datasets: [{
+                        label: 'Distribution',
+                        data: [{{ total_revenue or 0 }}, {{ total_expenses or 0 }}, {{ total_payroll or 0 }}, {{ total_products or 0 }}, {{ pending_tasks or 0 }}],
+                        backgroundColor: [
+                            'rgba(16, 185, 129, 0.6)',
+                            'rgba(245, 158, 11, 0.6)',
+                            'rgba(59, 130, 246, 0.6)',
+                            'rgba(139, 92, 246, 0.6)',
+                            'rgba(236, 72, 153, 0.6)'
+                        ],
+                        borderColor: ['#10b981', '#f59e0b', '#3b82f6', '#8b5cf6', '#ec4899'],
+                        borderWidth: 1.5,
+                        borderRadius: 8,
+                        borderSkipped: false,
+                        barPercentage: 0.6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false },
+                            ticks: { callback: (val) => 'Rs. ' + (val/1000) + 'k', font: { size: 11 } },
+                            border: { display: false }
+                        },
+                        x: { 
+                            grid: { display: false },
+                            ticks: { font: { size: 11 } },
+                            border: { display: false }
                         }
                     }
+                }
+            });
+        }
+
+        createSalesChart();
+        createStockChart();
+        createMainChart();
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        async function loadAIInsights() {
+            try {
+                const res = await fetch('/api/ai/chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('meta[name=csrf-token]').content},
+                    body: JSON.stringify({message: 'Give me 3 quick bullet points about my current business health based on the data. Keep it brief.'})
                 });
-            }
-
-            // Initialize all charts
-            createSalesChart();
-            createStockChart();
-            createMainChart();
-
-            // Load AI Insights
-            async function loadAIInsights() {
-                try {
-                    const res = await fetch('/api/ai/chat', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({message: 'Give me 3 quick bullet points about my current business health based on the data. Keep it brief.'})
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                        document.getElementById('aiQuickInsights').innerHTML = data.response.replace(/\n/g, '<br>');
-                    } else {
-                        document.getElementById('aiQuickInsights').innerHTML = '<span style="color: var(--text-secondary);">AI insights unavailable. <a href="/ai-chat" style="color: var(--accent-blue);">Try the AI Assistant</a></span>';
-                    }
-                } catch(e) {
-                    document.getElementById('aiQuickInsights').innerHTML = '<span style="color: var(--text-secondary);">Connect to AI for insights</span>';
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('aiQuickInsights').innerHTML = escapeHtml(data.response).replace(/\n/g, '<br>');
+                } else {
+                    document.getElementById('aiQuickInsights').innerHTML = '<span style="color: var(--text-secondary);">AI insights unavailable. <a href="/ai-chat" style="color: var(--accent-blue);">Try the AI Assistant</a></span>';
                 }
+            } catch(e) {
+                document.getElementById('aiQuickInsights').innerHTML = '<span style="color: var(--text-secondary);">Connect to AI for insights</span>';
             }
+        }
 
-            async function loadAIRecommendations() {
-                try {
-                    const res = await fetch('/api/ai/chat', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({message: 'Based on my data, give me 3 specific actionable recommendations to improve my business. Be concise.'})
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                        document.getElementById('aiRecommendations').innerHTML = data.response.replace(/\n/g, '<br>');
-                    } else {
-                        document.getElementById('aiRecommendations').innerHTML = '<span style="color: var(--text-secondary);">Recommendations unavailable. <a href="/ai-analytics" style="color: var(--accent-green);">View AI Analytics</a></span>';
-                    }
-                } catch(e) {
-                    document.getElementById('aiRecommendations').innerHTML = '<span style="color: var(--text-secondary);">Connect to AI for recommendations</span>';
+        async function loadAIRecommendations() {
+            try {
+                const res = await fetch('/api/ai/chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('meta[name=csrf-token]').content},
+                    body: JSON.stringify({message: 'Based on my data, give me 3 specific actionable recommendations to improve my business. Be concise.'})
+                });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('aiRecommendations').innerHTML = escapeHtml(data.response).replace(/\n/g, '<br>');
+                } else {
+                    document.getElementById('aiRecommendations').innerHTML = '<span style="color: var(--text-secondary);">Recommendations unavailable. <a href="/ai-analytics" style="color: var(--accent-green);">View AI Analytics</a></span>';
                 }
+            } catch(e) {
+                document.getElementById('aiRecommendations').innerHTML = '<span style="color: var(--text-secondary);">Connect to AI for recommendations</span>';
             }
+        }
 
-            loadAIInsights();
-            loadAIRecommendations();
+        loadAIInsights();
+        loadAIRecommendations();
 
-        });
-    </script>
-</body>
-</html>
+        // SSE Live KPI streaming
+        const kpiSource = new EventSource('/api/dashboard/stream');
+        kpiSource.onmessage = function(event) {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.revenue !== undefined) {
+                    document.getElementById('kpi-revenue').textContent = 'Rs. ' + Number(data.revenue).toLocaleString('en-IN');
+                }
+                if (data.pending_tasks !== undefined) {
+                    document.getElementById('kpi-tasks').textContent = data.pending_tasks;
+                }
+            } catch(e) {}
+        };
+        kpiSource.onerror = function() { kpiSource.close(); };
+
+    });
+</script>
+{% endblock %}

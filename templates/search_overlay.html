@@ -1,0 +1,43 @@
+<!-- Global Search Overlay -->
+<div class="search-overlay" id="searchOverlay">
+    <div class="search-box">
+        <input type="text" id="globalSearchInput" placeholder="Search employees, products, tasks..." autocomplete="off" aria-label="Global search">
+        <div class="search-results" id="searchResults"></div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const input = document.getElementById('globalSearchInput');
+    const results = document.getElementById('searchResults');
+    let debounceTimer;
+
+    if (input) {
+        input.addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+            const q = this.value.trim();
+            if (q.length < 2) { results.innerHTML = ''; return; }
+            debounceTimer = setTimeout(async () => {
+                try {
+                    const res = await fetch('/api/search?q=' + encodeURIComponent(q));
+                    const data = await res.json();
+                    if (!data.length) {
+                        results.innerHTML = '<div class="search-result-item text-secondary">No results found</div>';
+                        return;
+                    }
+                    results.innerHTML = data.map(item => {
+                        const url = item.type === 'employee' ? '/employee' :
+                                    item.type === 'product' ? '/inventory' : '/projects';
+                        return '<a href="' + url + '" class="search-result-item">' +
+                            '<i class="bi bi-' + (item.type === 'employee' ? 'person' : item.type === 'product' ? 'box' : 'list-task') + '"></i>' +
+                            '<div><div class="text-white fw-bold" style="font-size:14px;">' + item.title + '</div>' +
+                            '<div style="font-size:12px;">' + (item.subtitle || '') + '</div></div></a>';
+                    }).join('');
+                } catch(e) {
+                    results.innerHTML = '<div class="search-result-item text-secondary">Search unavailable</div>';
+                }
+            }, 300);
+        });
+    }
+});
+</script>
