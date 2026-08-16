@@ -36,7 +36,7 @@ def inventory_list():
                     SELECT product_id, name, sku, quantity, reorder_level, unit_price
                     FROM product
                     WHERE name LIKE %s OR sku LIKE %s
-                    ORDER BY `{sort_by}` {sort_dir}
+                    ORDER BY "{sort_by}" {sort_dir}
                     LIMIT %s OFFSET %s
                 """
                 cursor.execute(sql, (f'%{search_query}%', f'%{search_query}%', per_page, offset))
@@ -46,7 +46,7 @@ def inventory_list():
                 sql = f"""
                     SELECT product_id, name, sku, quantity, reorder_level, unit_price
                     FROM product
-                    ORDER BY `{sort_by}` {sort_dir}
+                    ORDER BY "{sort_by}" {sort_dir}
                     LIMIT %s OFFSET %s
                 """
                 cursor.execute(sql, (per_page, offset))

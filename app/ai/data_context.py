@@ -20,13 +20,13 @@ class DataContext:
             cursor = self._connect()
             try:
                 cursor.execute("""
-                    SELECT DATE_FORMAT(sale_date, '%%Y-%%m') as month,
+                    SELECT TO_CHAR(sale_date, 'YYYY-MM') as month,
                            SUM(total_amount) as revenue,
                            COUNT(*) as sale_count,
                            SUM(quantity) as units_sold
                     FROM sale
-                    WHERE sale_date >= DATE_SUB(CURDATE(), INTERVAL %s MONTH)
-                    GROUP BY DATE_FORMAT(sale_date, '%%Y-%%m')
+                    WHERE sale_date >= CURRENT_DATE - INTERVAL %s MONTH
+                    GROUP BY TO_CHAR(sale_date, 'YYYY-MM')
                     ORDER BY month
                 """, (months,))
                 monthly_sales = cursor.fetchall()
@@ -50,7 +50,7 @@ class DataContext:
 
                 cursor.execute("""
                     SELECT SUM(total_amount) as today_revenue FROM sale
-                    WHERE sale_date = CURDATE()
+                    WHERE sale_date = CURRENT_DATE
                 """)
                 today_revenue = cursor.fetchone()['today_revenue'] or 0
             finally:
@@ -71,11 +71,11 @@ class DataContext:
             cursor = self._connect()
             try:
                 cursor.execute("""
-                    SELECT DATE_FORMAT(date, '%%Y-%%m') as month,
+                    SELECT TO_CHAR(date, 'YYYY-MM') as month,
                            category, SUM(amount) as total, COUNT(*) as count
                     FROM expense
-                    WHERE date >= DATE_SUB(CURDATE(), INTERVAL %s MONTH)
-                    GROUP BY DATE_FORMAT(date, '%%Y-%%m'), category
+                    WHERE date >= CURRENT_DATE - INTERVAL %s MONTH
+                    GROUP BY TO_CHAR(date, 'YYYY-MM'), category
                     ORDER BY month, total DESC
                 """, (months,))
                 monthly_expenses = cursor.fetchall()
@@ -124,7 +124,7 @@ class DataContext:
                 cursor.execute("""
                     SELECT p.name, COALESCE(SUM(s.quantity), 0) as sold_30d
                     FROM product p
-                    LEFT JOIN sale s ON p.product_id = s.product_id AND s.sale_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+                    LEFT JOIN sale s ON p.product_id = s.product_id AND s.sale_date >= CURRENT_DATE - INTERVAL '30 days'
                     GROUP BY p.name ORDER BY sold_30d DESC LIMIT 10
                 """)
                 demand_30d = cursor.fetchall()
@@ -154,18 +154,18 @@ class DataContext:
                 total_employees = cursor.fetchone()['total']
 
                 cursor.execute("""
-                    SELECT DATE_FORMAT(date, '%%Y-%%m') as month,
+                    SELECT TO_CHAR(date, 'YYYY-MM') as month,
                            COUNT(DISTINCT emp_id) as present_count
                     FROM attendance
-                    WHERE date >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH)
-                    GROUP BY DATE_FORMAT(date, '%%Y-%%m')
+                    WHERE date >= CURRENT_DATE - INTERVAL '3 months'
+                    GROUP BY TO_CHAR(date, 'YYYY-MM')
                     ORDER BY month
                 """)
                 attendance_trend = cursor.fetchall()
 
                 cursor.execute("""
                     SELECT status, COUNT(*) as count FROM leaves
-                    WHERE month(created_at) = month(CURDATE())
+                    WHERE EXTRACT(MONTH FROM created_at) = EXTRACT(MONTH FROM CURRENT_DATE)
                     GROUP BY status
                 """)
                 leave_summary = cursor.fetchall()
@@ -177,7 +177,7 @@ class DataContext:
                 """)
                 employees = cursor.fetchall()
 
-                cursor.execute("SELECT SUM(net_pay) as total FROM payroll WHERE month = month(CURDATE())")
+                cursor.execute("SELECT SUM(net_pay) as total FROM payroll WHERE month = EXTRACT(MONTH FROM CURRENT_DATE)")
                 current_payroll = cursor.fetchone()['total'] or 0
             finally:
                 self._close()

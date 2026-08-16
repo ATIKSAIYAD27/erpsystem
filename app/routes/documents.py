@@ -261,7 +261,7 @@ def share(doc_id):
                 return redirect(url_for('documents.document_list'))
 
             cursor.execute(
-                "INSERT IGNORE INTO document_share (doc_id, user_id, shared_by) VALUES (%s, %s, %s)",
+                "INSERT INTO document_share (doc_id, user_id, shared_by) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
                 (doc_id, user_id_to_share, session['user_id'])
             )
         conn.commit()

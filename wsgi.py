@@ -1,3 +1,6 @@
+from gevent import monkey
+monkey.patch_all()
+
 from flask import Flask, session, redirect, render_template, jsonify
 from flask_wtf.csrf import CSRFProtect
 from flask_limiter import Limiter

@@ -19,30 +19,30 @@ def advanced_finance():
         conn = get_db_connection()
         with conn.cursor() as cursor:
             cursor.execute("""
-                SELECT DATE_FORMAT(sale_date, '%%Y-%%m') as month, SUM(total_amount) as revenue
-                FROM sale WHERE YEAR(sale_date) = %s
-                GROUP BY DATE_FORMAT(sale_date, '%%Y-%%m') ORDER BY month
+                SELECT TO_CHAR(sale_date, 'YYYY-MM') as month, SUM(total_amount) as revenue
+                FROM sale WHERE EXTRACT(YEAR FROM sale_date) = %s
+                GROUP BY TO_CHAR(sale_date, 'YYYY-MM') ORDER BY month
             """, (year,))
             monthly_revenue = cursor.fetchall()
 
             cursor.execute("""
-                SELECT DATE_FORMAT(date, '%%Y-%%m') as month, SUM(amount) as expenses
-                FROM expense WHERE YEAR(date) = %s
-                GROUP BY DATE_FORMAT(date, '%%Y-%%m') ORDER BY month
+                SELECT TO_CHAR(date, 'YYYY-MM') as month, SUM(amount) as expenses
+                FROM expense WHERE EXTRACT(YEAR FROM date) = %s
+                GROUP BY TO_CHAR(date, 'YYYY-MM') ORDER BY month
             """, (year,))
             monthly_expenses = cursor.fetchall()
 
             cursor.execute("""
                 SELECT category, SUM(amount) as total
-                FROM expense WHERE YEAR(date) = %s
+                FROM expense WHERE EXTRACT(YEAR FROM date) = %s
                 GROUP BY category ORDER BY total DESC
             """, (year,))
             expense_by_category = cursor.fetchall()
 
-            cursor.execute("SELECT SUM(total_amount) as total FROM sale WHERE YEAR(sale_date) = %s", (year,))
+            cursor.execute("SELECT SUM(total_amount) as total FROM sale WHERE EXTRACT(YEAR FROM sale_date) = %s", (year,))
             total_revenue = float(cursor.fetchone()['total'] or 0)
 
-            cursor.execute("SELECT SUM(amount) as total FROM expense WHERE YEAR(date) = %s", (year,))
+            cursor.execute("SELECT SUM(amount) as total FROM expense WHERE EXTRACT(YEAR FROM date) = %s", (year,))
             total_expenses = float(cursor.fetchone()['total'] or 0)
 
             cursor.execute("SELECT SUM(net_pay) as total FROM payroll WHERE YEAR = %s", (year,))
@@ -51,16 +51,16 @@ def advanced_finance():
             net_profit = total_revenue - total_expenses - total_payroll
 
             cursor.execute("""
-                SELECT DATE_FORMAT(sale_date, '%%Y-%%m') as month, SUM(total_amount) as revenue
-                FROM sale WHERE sale_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
-                GROUP BY DATE_FORMAT(sale_date, '%%Y-%%m') ORDER BY month
+                SELECT TO_CHAR(sale_date, 'YYYY-MM') as month, SUM(total_amount) as revenue
+                FROM sale WHERE sale_date >= CURRENT_DATE - INTERVAL '6 months'
+                GROUP BY TO_CHAR(sale_date, 'YYYY-MM') ORDER BY month
             """)
             trend_data = cursor.fetchall()
 
             cursor.execute("""
                 SELECT p.name as product_name, SUM(s.quantity) as qty, SUM(s.total_amount) as revenue
                 FROM sale s JOIN product p ON s.product_id = p.product_id
-                WHERE YEAR(s.sale_date) = %s
+                WHERE EXTRACT(YEAR FROM s.sale_date) = %s
                 GROUP BY p.name ORDER BY revenue DESC LIMIT 10
             """, (year,))
             top_products = cursor.fetchall()
@@ -68,7 +68,7 @@ def advanced_finance():
             cursor.execute("""
                 SELECT c.name as customer_name, SUM(s.total_amount) as revenue
                 FROM sale s JOIN customer c ON s.customer_id = c.customer_id
-                WHERE YEAR(s.sale_date) = %s
+                WHERE EXTRACT(YEAR FROM s.sale_date) = %s
                 GROUP BY c.name ORDER BY revenue DESC LIMIT 10
             """, (year,))
             top_customers = cursor.fetchall()
@@ -110,16 +110,16 @@ def cashflow_data():
         conn = get_db_connection()
         with conn.cursor() as cursor:
             cursor.execute("""
-                SELECT DATE_FORMAT(sale_date, '%%Y-%%m') as month, SUM(total_amount) as inflow
-                FROM sale WHERE sale_date >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
-                GROUP BY DATE_FORMAT(sale_date, '%%Y-%%m') ORDER BY month
+                SELECT TO_CHAR(sale_date, 'YYYY-MM') as month, SUM(total_amount) as inflow
+                FROM sale WHERE sale_date >= CURRENT_DATE - INTERVAL '12 months'
+                GROUP BY TO_CHAR(sale_date, 'YYYY-MM') ORDER BY month
             """)
             inflows = {row['month']: float(row['inflow']) for row in cursor.fetchall()}
 
             cursor.execute("""
-                SELECT DATE_FORMAT(date, '%%Y-%%m') as month, SUM(amount) as outflow
-                FROM expense WHERE date >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
-                GROUP BY DATE_FORMAT(date, '%%Y-%%m') ORDER BY month
+                SELECT TO_CHAR(date, 'YYYY-MM') as month, SUM(amount) as outflow
+                FROM expense WHERE date >= CURRENT_DATE - INTERVAL '12 months'
+                GROUP BY TO_CHAR(date, 'YYYY-MM') ORDER BY month
             """)
             outflows = {row['month']: float(row['outflow']) for row in cursor.fetchall()}
 

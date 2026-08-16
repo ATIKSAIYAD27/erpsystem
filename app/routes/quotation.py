@@ -143,10 +143,11 @@ def quotation_create():
                             subtotal, discount_pct, discount_amount, tax_pct, tax_amount,
                             grand_total, valid_until, status, created_by)
                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'Draft', %s)
+                        RETURNING quote_id
                     """, (quote_number, customer_id, subject, notes, terms,
                           subtotal, discount_pct, discount_amount, tax_pct, tax_amount,
                           grand_total, valid_until, session['user_id']))
-                    quote_id = cursor.lastrowid
+                    quote_id = cursor.fetchone()['quote_id']
 
                     for product_id, qty, price, disc, line_total in items_data:
                         cursor.execute("""
@@ -389,9 +390,10 @@ def convert_to_sale(quote_id):
                         total_amount = safe_float(item['unit_price']) * item['quantity']
                         cursor.execute("""
                             INSERT INTO sale (customer_id, product_id, quantity, total_amount, sale_date)
-                            VALUES (%s, %s, %s, %s, CURDATE())
+                            VALUES (%s, %s, %s, %s, CURRENT_DATE)
+                            RETURNING sale_id
                         """, (quotation['customer_id'], item['product_id'], item['quantity'], total_amount))
-                        sale_ids.append(cursor.lastrowid)
+                        sale_ids.append(cursor.fetchone()['sale_id'])
 
                         cursor.execute("""
                             UPDATE product SET quantity = quantity - %s WHERE product_id = %s

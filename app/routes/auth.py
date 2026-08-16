@@ -161,10 +161,10 @@ def forgot_password():
 
                     cursor.execute("""
                         CREATE TABLE IF NOT EXISTS password_reset_token (
-                            id INT AUTO_INCREMENT PRIMARY KEY,
+                            id SERIAL PRIMARY KEY,
                             user_id INT NOT NULL,
                             token VARCHAR(128) NOT NULL UNIQUE,
-                            expires_at DATETIME NOT NULL,
+                            expires_at TIMESTAMP NOT NULL,
                             used BOOLEAN DEFAULT FALSE,
                             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                             FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE

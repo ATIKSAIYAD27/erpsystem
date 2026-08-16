@@ -39,7 +39,7 @@ def risk_list():
                 base_sql += " AND r.category = %s"
                 params.append(category_filter)
 
-            base_sql += " ORDER BY FIELD(r.risk_level, 'Critical', 'High', 'Medium', 'Low'), r.created_at DESC"
+            base_sql += " ORDER BY CASE r.risk_level WHEN 'Critical' THEN 1 WHEN 'High' THEN 2 WHEN 'Medium' THEN 3 WHEN 'Low' THEN 4 END, r.created_at DESC"
 
             cursor.execute(base_sql, params)
             risks = cursor.fetchall()
@@ -101,7 +101,7 @@ def add_risk():
             cursor.execute("""
                 INSERT INTO risk (title, description, category, risk_level, probability, impact,
                     risk_score, assigned_to, mitigation_plan, identified_by, identified_date, status)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURDATE(), 'Identified')
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_DATE, 'Identified')
             """, (title, description, category, risk_level, probability, impact,
                   risk_score, assigned_to, mitigation_plan, session['user_id']))
         conn.commit()

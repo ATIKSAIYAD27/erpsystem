@@ -1,10 +1,8 @@
-import pymysql
+import psycopg2
+import psycopg2.extras
 import os
 import logging
-from dotenv import load_dotenv
 from dbutils.pooled_db import PooledDB
-
-load_dotenv()
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +17,7 @@ class ManagedCursor:
 
     def __init__(self, conn_wrapper):
         self._conn_wrapper = conn_wrapper
-        self._cursor = conn_wrapper._conn.cursor()
+        self._cursor = conn_wrapper._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     def __enter__(self):
         return self._cursor
@@ -86,36 +84,29 @@ class ManagedConnection:
 def _get_pool():
     global _pool
     if _pool is None:
-        host = os.environ.get('DB_HOST', os.environ.get('MYSQLHOST', '127.0.0.1'))
-        port = int(os.environ.get('DB_PORT', os.environ.get('MYSQLPORT', 3306)))
-        user = os.environ.get('DB_USER', os.environ.get('MYSQLUSER', 'root'))
-        password = os.environ.get('DB_PASSWORD', os.environ.get('MYSQLPASSWORD', ''))
-        database = os.environ.get('DB_NAME', os.environ.get('MYSQLDATABASE', 'erpsystem'))
+        host = os.environ.get('DB_HOST', '127.0.0.1')
+        port = int(os.environ.get('DB_PORT', 5432))
+        user = os.environ.get('DB_USER', 'postgres')
+        password = os.environ.get('DB_PASSWORD', '')
+        database = os.environ.get('DB_NAME', 'erpsystem')
 
-        ssl_config = None
-        mysql_ssl_ca = os.environ.get('MYSQL_ROOT_CERT')
-        if mysql_ssl_ca:
-            ssl_config = {'ca': mysql_ssl_ca}
+        sslmode = os.environ.get('DB_SSLMODE', 'require')
 
         _pool = PooledDB(
-            creator=pymysql,
+            creator=psycopg2,
             maxconnections=20,
             mincached=2,
             maxcached=10,
             blocking=True,
-            maxusage=None,
-            setsession=["SET NAMES utf8mb4", "SET SESSION wait_timeout=28800"],
             host=host,
             port=port,
             user=user,
             password=password,
             database=database,
-            cursorclass=pymysql.cursors.DictCursor,
-            connect_timeout=10,
-            charset='utf8mb4',
-            ssl=ssl_config if ssl_config else None,
+            options=f'-c statement_timeout=10000',
+            sslmode=sslmode,
         )
-        logger.info("Database connection pool initialized (max=%d)", 20)
+        logger.info("PostgreSQL connection pool initialized (max=%d)", 20)
     return _pool
 
 

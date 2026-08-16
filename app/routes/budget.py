@@ -25,7 +25,7 @@ def budget_list():
                 LEFT JOIN (
                     SELECT department, SUM(amount) as total
                     FROM expense
-                    WHERE YEAR(date) = %s
+                    WHERE EXTRACT(YEAR FROM date) = %s
                     GROUP BY department
                 ) spent ON spent.department = b.department
                 WHERE b.fiscal_year = %s
@@ -36,7 +36,7 @@ def budget_list():
             cursor.execute("""
                 SELECT department, SUM(amount) as total
                 FROM expense
-                WHERE YEAR(date) = %s
+                WHERE EXTRACT(YEAR FROM date) = %s
                 GROUP BY department
             """, (year,))
             expenses = {row['department']: float(row['total']) for row in cursor.fetchall()}
@@ -80,7 +80,7 @@ def add_budget():
             cursor.execute("""
                 INSERT INTO budget (department, allocated_amount, fiscal_year, created_by)
                 VALUES (%s, %s, %s, %s)
-                ON DUPLICATE KEY UPDATE allocated_amount = %s
+                ON CONFLICT (department, fiscal_year) DO UPDATE SET allocated_amount = EXCLUDED.allocated_amount
             """, (department, allocated, year, session['user_id'], allocated))
         conn.commit()
         conn.close()
@@ -123,7 +123,7 @@ def api_budget_summary():
                 FROM budget b
                 LEFT JOIN (
                     SELECT department, SUM(amount) as total
-                    FROM expense WHERE YEAR(date) = %s
+                    FROM expense WHERE EXTRACT(YEAR FROM date) = %s
                     GROUP BY department
                 ) spent ON spent.department = b.department
                 WHERE b.fiscal_year = %s

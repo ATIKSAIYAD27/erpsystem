@@ -22,7 +22,10 @@ def sales_pipeline():
                 FROM sales_pipeline sp
                 LEFT JOIN customer c ON sp.customer_id = c.customer_id
                 LEFT JOIN users u ON sp.owner_id = u.user_id
-                ORDER BY FIELD(sp.stage, 'Lead', 'Qualified', 'Proposal', 'Negotiation', 'Closed Won', 'Closed Lost'), sp.created_at DESC
+                ORDER BY CASE sp.stage
+                    WHEN 'Lead' THEN 1 WHEN 'Qualified' THEN 2 WHEN 'Proposal' THEN 3
+                    WHEN 'Negotiation' THEN 4 WHEN 'Closed Won' THEN 5 WHEN 'Closed Lost' THEN 6
+                END, sp.created_at DESC
             """)
             deals = cursor.fetchall()
 
@@ -162,7 +165,7 @@ def set_target():
             cursor.execute("""
                 INSERT INTO sales_target (month, year, target_amount, set_by)
                 VALUES (%s, %s, %s, %s)
-                ON DUPLICATE KEY UPDATE target_amount = %s
+                ON CONFLICT (month, year) DO UPDATE SET target_amount = EXCLUDED.target_amount
             """, (month, year, target_amount, session['user_id'], target_amount))
         conn.commit()
         conn.close()

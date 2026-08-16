@@ -46,7 +46,7 @@ def my_dashboard():
 
             cursor.execute("""
                 SELECT * FROM leave_balance
-                WHERE emp_id = %s AND year = YEAR(CURDATE())
+                WHERE emp_id = %s AND year = EXTRACT(YEAR FROM CURRENT_DATE)
             """, (emp_id,))
             leave_balance = cursor.fetchall()
 
@@ -58,7 +58,7 @@ def my_dashboard():
 
             cursor.execute("""
                 SELECT COUNT(*) as present FROM attendance
-                WHERE emp_id = %s AND MONTH(date) = MONTH(CURDATE()) AND status = 'Present'
+                WHERE emp_id = %s AND EXTRACT(MONTH FROM date) = EXTRACT(MONTH FROM CURRENT_DATE) AND status = 'Present'
             """, (emp_id,))
             present_days = cursor.fetchone()['present']
 

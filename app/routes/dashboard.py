@@ -45,10 +45,10 @@ def dashboard():
             total_payroll = float(cursor.fetchone()['total'] or 0)
 
             cursor.execute("""
-                SELECT DATE_FORMAT(sale_date, '%%Y-%%m') as month, SUM(total_amount) as revenue
+                SELECT TO_CHAR(sale_date, 'YYYY-MM') as month, SUM(total_amount) as revenue
                 FROM sale
-                WHERE sale_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
-                GROUP BY DATE_FORMAT(sale_date, '%%Y-%%m')
+                WHERE sale_date >= CURRENT_DATE - INTERVAL '6 months'
+                GROUP BY TO_CHAR(sale_date, 'YYYY-MM')
                 ORDER BY month
             """)
             monthly_sales = cursor.fetchall()
@@ -56,7 +56,7 @@ def dashboard():
             cursor.execute("""
                 (SELECT 'sale' as type, CONCAT('Sale of ', quantity, ' items recorded') as message, sale_date as timestamp FROM sale)
                 UNION
-                (SELECT 'attendance' as type, CONCAT('Employee #', emp_id, ' checked in') as message, CONCAT(`date`, ' ', check_in) as timestamp FROM attendance)
+                (SELECT 'attendance' as type, CONCAT('Employee #', emp_id, ' checked in') as message, CONCAT(date, ' ', check_in) as timestamp FROM attendance)
                 UNION
                 (SELECT 'task' as type, CONCAT('New task: ', title) as message, deadline as timestamp FROM task)
                 ORDER BY timestamp DESC

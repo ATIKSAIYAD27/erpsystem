@@ -66,13 +66,13 @@ def import_employees():
                     from werkzeug.security import generate_password_hash
                     pw = generate_password_hash('Temp@123')
                     cursor.execute(
-                        "INSERT INTO users (name, email, password_hash, role_id) VALUES (%s, %s, %s, 3)",
+                        "INSERT INTO users (name, email, password_hash, role_id) VALUES (%s, %s, %s, 3) RETURNING user_id",
                         (name, email, pw)
                     )
-                    user_id = cursor.lastrowid
+                    user_id = cursor.fetchone()['user_id']
 
                     cursor.execute(
-                        "INSERT INTO employee (user_id, department, job_title, salary, phone, hire_date) VALUES (%s, %s, %s, %s, %s, CURDATE())",
+                        "INSERT INTO employee (user_id, department, job_title, salary, phone, hire_date) VALUES (%s, %s, %s, %s, %s, CURRENT_DATE)",
                         (user_id, department, job_title, salary, phone)
                     )
                     imported += 1

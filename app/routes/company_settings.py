@@ -51,13 +51,13 @@ def update_company_settings():
             cursor.execute("""
                 INSERT INTO company_settings (id, company_name, address, phone, email, tax_rate, currency)
                 VALUES (1, %s, %s, %s, %s, %s, %s)
-                ON DUPLICATE KEY UPDATE
-                    company_name=VALUES(company_name),
-                    address=VALUES(address),
-                    phone=VALUES(phone),
-                    email=VALUES(email),
-                    tax_rate=VALUES(tax_rate),
-                    currency=VALUES(currency)
+                ON CONFLICT (id) DO UPDATE SET
+                    company_name = EXCLUDED.company_name,
+                    address = EXCLUDED.address,
+                    phone = EXCLUDED.phone,
+                    email = EXCLUDED.email,
+                    tax_rate = EXCLUDED.tax_rate,
+                    currency = EXCLUDED.currency
             """, (company_name, address, phone, email, tax_rate, currency))
         conn.commit()
         conn.close()

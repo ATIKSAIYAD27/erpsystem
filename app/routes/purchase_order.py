@@ -81,8 +81,9 @@ def add_po():
                 cursor.execute("""
                     INSERT INTO purchase_order (supplier_id, order_date, expected_delivery, total_amount, status, created_by)
                     VALUES (%s, %s, %s, %s, 'Pending', %s)
+                    RETURNING po_id
                 """, (supplier_id, order_date, expected_delivery, total_amount, session['user_id']))
-                po_id = cursor.lastrowid
+                po_id = cursor.fetchone()['po_id']
 
                 for product_id, qty, unit_cost in items:
                     cursor.execute("""

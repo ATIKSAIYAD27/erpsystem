@@ -96,15 +96,18 @@ def add_employee():
                 VALUES (%s, %s, %s, %s, %s)
             """
             cursor.execute(sql, (user_id, department, salary, hire_date, job_title))
-            new_emp_id = cursor.lastrowid
+            new_emp_id = cursor.fetchone()['emp_id'] if hasattr(cursor, 'fetchone') else None
+            if new_emp_id is None:
+                cursor.execute("SELECT currval(pg_get_serial_sequence('employee', 'emp_id'))")
+                new_emp_id = cursor.fetchone()[0]
 
             import datetime
             leave_types = ['Sick', 'Casual', 'Vacation']
             current_year = datetime.datetime.now().year
             for lt in leave_types:
                 cursor.execute("""
-                    INSERT IGNORE INTO leave_balance (emp_id, leave_type, total_days, used_days, year)
-                    VALUES (%s, %s, 12, 0, %s)
+                    INSERT INTO leave_balance (emp_id, leave_type, total_days, used_days, year)
+                    VALUES (%s, %s, 12, 0, %s) ON CONFLICT DO NOTHING
                 """, (new_emp_id, lt, current_year))
 
             from app.utils import create_notification
