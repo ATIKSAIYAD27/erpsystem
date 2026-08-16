@@ -10,4 +10,4 @@ python migrate_performance.py || echo "migrate_performance.py completed with war
 
 # Start with gunicorn using gevent for WebSocket support
 echo "Starting server..."
-gunicorn --config gunicorn_config.py app:app
+gunicorn --config gunicorn_config.py wsgi:app

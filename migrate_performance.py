@@ -14,11 +14,11 @@ logger = logging.getLogger(__name__)
 
 def get_connection():
     return pymysql.connect(
-        host=os.environ.get('DB_HOST', '127.0.0.1'),
-        port=int(os.environ.get('DB_PORT', 3306)),
-        user=os.environ.get('DB_USER', 'root'),
-        password=os.environ.get('DB_PASSWORD', ''),
-        database=os.environ.get('DB_NAME', 'erpsystem'),
+        host=os.environ.get('DB_HOST', os.environ.get('MYSQLHOST', '127.0.0.1')),
+        port=int(os.environ.get('DB_PORT', os.environ.get('MYSQLPORT', 3306))),
+        user=os.environ.get('DB_USER', os.environ.get('MYSQLUSER', 'root')),
+        password=os.environ.get('DB_PASSWORD', os.environ.get('MYSQLPASSWORD', '')),
+        database=os.environ.get('DB_NAME', os.environ.get('MYSQLDATABASE', 'erpsystem')),
         charset='utf8mb4',
         cursorclass=pymysql.cursors.DictCursor,
     )
