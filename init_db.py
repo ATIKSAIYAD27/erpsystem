@@ -6,12 +6,23 @@ from werkzeug.security import generate_password_hash
 load_dotenv()
 
 
+def get_ssl_config():
+    mysql_ssl_ca = os.environ.get('MYSQL_ROOT_CERT')
+    if mysql_ssl_ca:
+        return {'ca': mysql_ssl_ca}
+    host = os.environ.get('DB_HOST', os.environ.get('MYSQLHOST', '127.0.0.1'))
+    if host not in ('127.0.0.1', 'localhost'):
+        return {}
+    return None
+
+
 def get_db_connection():
     host = os.environ.get('DB_HOST', os.environ.get('MYSQLHOST', '127.0.0.1'))
     port = int(os.environ.get('DB_PORT', os.environ.get('MYSQLPORT', 3306)))
     user = os.environ.get('DB_USER', os.environ.get('MYSQLUSER', 'root'))
     password = os.environ.get('DB_PASSWORD', os.environ.get('MYSQLPASSWORD', ''))
     database = os.environ.get('DB_NAME', os.environ.get('MYSQLDATABASE', 'erpsystem'))
+    ssl = get_ssl_config()
 
     try:
         return pymysql.connect(
@@ -21,7 +32,8 @@ def get_db_connection():
             password=password,
             database=database,
             cursorclass=pymysql.cursors.DictCursor,
-            connect_timeout=5
+            connect_timeout=10,
+            ssl=ssl,
         )
     except Exception as primary_error:
         fallback_host = 'localhost' if host == '127.0.0.1' else '127.0.0.1'
@@ -33,7 +45,7 @@ def get_db_connection():
                 password=password,
                 database=database,
                 cursorclass=pymysql.cursors.DictCursor,
-                connect_timeout=5
+                connect_timeout=10,
             )
         except Exception:
             raise primary_error
@@ -50,7 +62,9 @@ def init_db():
             port=int(os.environ.get('DB_PORT', os.environ.get('MYSQLPORT', 3306))),
             user=os.environ.get('DB_USER', os.environ.get('MYSQLUSER', 'root')),
             password=os.environ.get('DB_PASSWORD', os.environ.get('MYSQLPASSWORD', '')),
-            cursorclass=pymysql.cursors.DictCursor
+            cursorclass=pymysql.cursors.DictCursor,
+            connect_timeout=10,
+            ssl=get_ssl_config(),
         )
         with temp_conn.cursor() as cursor:
             print(f"Checking for database '{db_name}'...")

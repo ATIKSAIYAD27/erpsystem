@@ -92,6 +92,13 @@ def _get_pool():
         password = os.environ.get('DB_PASSWORD', os.environ.get('MYSQLPASSWORD', ''))
         database = os.environ.get('DB_NAME', os.environ.get('MYSQLDATABASE', 'erpsystem'))
 
+        ssl_config = {}
+        mysql_ssl_ca = os.environ.get('MYSQL_ROOT_CERT')
+        if mysql_ssl_ca:
+            ssl_config = {'ca': mysql_ssl_ca}
+        elif host not in ('127.0.0.1', 'localhost'):
+            ssl_config = {}
+
         _pool = PooledDB(
             creator=pymysql,
             maxconnections=20,
@@ -106,8 +113,9 @@ def _get_pool():
             password=password,
             database=database,
             cursorclass=pymysql.cursors.DictCursor,
-            connect_timeout=5,
+            connect_timeout=10,
             charset='utf8mb4',
+            ssl=ssl_config if ssl_config else None,
         )
         logger.info("Database connection pool initialized (max=%d)", 20)
     return _pool
