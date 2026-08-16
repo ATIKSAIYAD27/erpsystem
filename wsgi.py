@@ -51,6 +51,16 @@ app.logger.setLevel(logging.INFO)
 
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading', logger=False, engineio_logger=False)
 
+def _auto_init_db():
+    try:
+        from init_db_pg import init_db
+        init_db()
+        app.logger.info("Database tables verified/created automatically.")
+    except Exception as e:
+        app.logger.error("Auto DB init failed: %s", e)
+
+_auto_init_db()
+
 from app.routes.auth import auth_bp
 from app.routes.dashboard import dashboard_bp
 from app.routes.employee import employee_bp
@@ -127,31 +137,6 @@ app.jinja_env.filters['indian_date'] = indian_date
 @app.route('/')
 def index():
     return redirect('/login')
-
-
-@app.route('/debug-db')
-def debug_db():
-    import traceback
-    try:
-        from app.db import get_db_connection
-        conn = get_db_connection()
-        with conn.cursor() as cursor:
-            cursor.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name")
-            tables = [r['table_name'] for r in cursor.fetchall()]
-            result = {'tables': tables, 'count': len(tables)}
-
-            if 'users' in tables:
-                cursor.execute("SELECT column_name FROM information_schema.columns WHERE table_name = 'users' ORDER BY ordinal_position")
-                result['users_columns'] = [r['column_name'] for r in cursor.fetchall()]
-                cursor.execute("SELECT COUNT(*) as cnt FROM users")
-                result['user_count'] = cursor.fetchone()['cnt']
-            if 'role' in tables:
-                cursor.execute("SELECT * FROM role")
-                result['roles'] = [dict(r) for r in cursor.fetchall()]
-        conn.close()
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({'error': str(e), 'trace': traceback.format_exc()}), 500
 
 
 @app.route('/health')

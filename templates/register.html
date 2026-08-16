@@ -201,23 +201,6 @@
                 </div>
             </div>
 
-            <div class="mb-4">
-                <label class="form-label">System Role</label>
-                <div class="input-group">
-                    <span class="input-group-text bg-transparent border-secondary text-secondary" style="border-right: none; border-radius: 12px 0 0 12px;">
-                        <i class="bi bi-shield-check"></i>
-                    </span>
-                    <select class="form-select" name="role_id" style="border-left: none;" required>
-                        <option value="" disabled selected>Select an organizational role</option>
-                        {% for role in roles %}
-                        <option value="{{ role.role_id }}" style="background: #1e293b;">{{ role.role_name }}</option>
-                        {% else %}
-                        <option disabled>No roles available. Please contact administrator.</option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </div>
-
             <button type="submit" class="btn btn-glow">Complete Registration <i class="bi bi-arrow-right ms-2"></i></button>
         </form>
 
