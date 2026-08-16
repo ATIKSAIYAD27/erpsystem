@@ -92,12 +92,10 @@ def _get_pool():
         password = os.environ.get('DB_PASSWORD', os.environ.get('MYSQLPASSWORD', ''))
         database = os.environ.get('DB_NAME', os.environ.get('MYSQLDATABASE', 'erpsystem'))
 
-        ssl_config = {}
+        ssl_config = None
         mysql_ssl_ca = os.environ.get('MYSQL_ROOT_CERT')
         if mysql_ssl_ca:
             ssl_config = {'ca': mysql_ssl_ca}
-        elif host not in ('127.0.0.1', 'localhost'):
-            ssl_config = {}
 
         _pool = PooledDB(
             creator=pymysql,

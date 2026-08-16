@@ -16,9 +16,6 @@ def get_ssl_config():
     mysql_ssl_ca = os.environ.get('MYSQL_ROOT_CERT')
     if mysql_ssl_ca:
         return {'ca': mysql_ssl_ca}
-    host = os.environ.get('DB_HOST', os.environ.get('MYSQLHOST', '127.0.0.1'))
-    if host not in ('127.0.0.1', 'localhost'):
-        return {}
     return None
 
 

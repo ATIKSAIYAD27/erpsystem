@@ -10,9 +10,6 @@ def get_ssl_config():
     mysql_ssl_ca = os.environ.get('MYSQL_ROOT_CERT')
     if mysql_ssl_ca:
         return {'ca': mysql_ssl_ca}
-    host = os.environ.get('DB_HOST', os.environ.get('MYSQLHOST', '127.0.0.1'))
-    if host not in ('127.0.0.1', 'localhost'):
-        return {}
     return None
 
 
@@ -55,24 +52,29 @@ def init_db():
     print("Initializing Nexus ERP Database...")
 
     db_name = os.environ.get('DB_NAME', os.environ.get('MYSQLDATABASE', 'erpsystem'))
+    host = os.environ.get('DB_HOST', os.environ.get('MYSQLHOST', 'localhost'))
+    is_remote = host not in ('127.0.0.1', 'localhost', '')
 
     try:
-        temp_conn = pymysql.connect(
-            host=os.environ.get('DB_HOST', os.environ.get('MYSQLHOST', 'localhost')),
-            port=int(os.environ.get('DB_PORT', os.environ.get('MYSQLPORT', 3306))),
-            user=os.environ.get('DB_USER', os.environ.get('MYSQLUSER', 'root')),
-            password=os.environ.get('DB_PASSWORD', os.environ.get('MYSQLPASSWORD', '')),
-            cursorclass=pymysql.cursors.DictCursor,
-            connect_timeout=10,
-            ssl=get_ssl_config(),
-        )
-        with temp_conn.cursor() as cursor:
-            print(f"Checking for database '{db_name}'...")
-            safe_db_name = db_name.replace('`', '``')
-            cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{safe_db_name}`")
-        temp_conn.commit()
-        temp_conn.close()
-        print(f"Database '{db_name}' verified.")
+        if not is_remote:
+            temp_conn = pymysql.connect(
+                host=host,
+                port=int(os.environ.get('DB_PORT', os.environ.get('MYSQLPORT', 3306))),
+                user=os.environ.get('DB_USER', os.environ.get('MYSQLUSER', 'root')),
+                password=os.environ.get('DB_PASSWORD', os.environ.get('MYSQLPASSWORD', '')),
+                cursorclass=pymysql.cursors.DictCursor,
+                connect_timeout=10,
+                ssl=get_ssl_config(),
+            )
+            with temp_conn.cursor() as cursor:
+                print(f"Checking for database '{db_name}'...")
+                safe_db_name = db_name.replace('`', '``')
+                cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{safe_db_name}`")
+            temp_conn.commit()
+            temp_conn.close()
+            print(f"Database '{db_name}' verified.")
+        else:
+            print(f"Remote host detected, assuming database '{db_name}' exists (Render/managed MySQL).")
 
         conn = get_db_connection()
         with conn.cursor() as cursor:
