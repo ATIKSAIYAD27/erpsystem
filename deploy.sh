@@ -1,3 +1,9 @@
+# Execute migrations/init scripts
+python init_db.py
+python migrate_performance.py
+
+# Start the Gunicorn server
+exec gunicorn --config gunicorn_config.py wsgi:app
 # Wait for MySQL to be ready
 echo "Waiting for database..."
 for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
