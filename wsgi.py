@@ -129,6 +129,31 @@ def index():
     return redirect('/login')
 
 
+@app.route('/debug-db')
+def debug_db():
+    import traceback
+    try:
+        from app.db import get_db_connection
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name")
+            tables = [r['table_name'] for r in cursor.fetchall()]
+            result = {'tables': tables, 'count': len(tables)}
+
+            if 'users' in tables:
+                cursor.execute("SELECT column_name FROM information_schema.columns WHERE table_name = 'users' ORDER BY ordinal_position")
+                result['users_columns'] = [r['column_name'] for r in cursor.fetchall()]
+                cursor.execute("SELECT COUNT(*) as cnt FROM users")
+                result['user_count'] = cursor.fetchone()['cnt']
+            if 'role' in tables:
+                cursor.execute("SELECT * FROM role")
+                result['roles'] = [dict(r) for r in cursor.fetchall()]
+        conn.close()
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e), 'trace': traceback.format_exc()}), 500
+
+
 @app.route('/health')
 def health_check():
     try:
