@@ -47,9 +47,6 @@
     }
 </style>
 {% endblock %}
-    .delay-4 { animation-delay: 0.4s; }
-</style>
-{% endblock %}
 
 {% block content %}
     <div class="header-section animate-up">
@@ -160,8 +157,8 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% if categories %}
-                    {% for cat in categories %}
+                    {% if category_breakdown %}
+                    {% for cat in category_breakdown %}
                     <tr>
                         <td class="text-white fw-bold">
                             <i class="bi bi-tag me-2 text-primary"></i> {{ cat.category }}

@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 @login_required
 def my_dashboard():
     user_id = session['user_id']
+    conn = None
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
@@ -68,8 +69,6 @@ def my_dashboard():
             """, (emp_id,))
             pending_leaves = cursor.fetchone()['pending']
 
-        conn.close()
-
         for l in leaves:
             if l.get('start_date'):
                 l['start_date'] = l['start_date'].strftime('%d/%m/%Y')
@@ -81,9 +80,15 @@ def my_dashboard():
             if a.get('check_in') and a.get('check_out'):
                 ci = a['check_in']
                 co = a['check_out']
-                if isinstance(ci, str):
+                if isinstance(ci, datetime.timedelta):
+                    total_seconds = int(ci.total_seconds())
+                    ci = datetime.time(total_seconds // 3600, (total_seconds % 3600) // 60, total_seconds % 60)
+                elif isinstance(ci, str):
                     ci = datetime.datetime.strptime(ci, '%H:%M:%S').time() if ':' in ci else datetime.datetime.strptime(ci, '%H:%M').time()
-                if isinstance(co, str):
+                if isinstance(co, datetime.timedelta):
+                    total_seconds = int(co.total_seconds())
+                    co = datetime.time(total_seconds // 3600, (total_seconds % 3600) // 60, total_seconds % 60)
+                elif isinstance(co, str):
                     co = datetime.datetime.strptime(co, '%H:%M:%S').time() if ':' in co else datetime.datetime.strptime(co, '%H:%M').time()
                 diff = datetime.datetime.combine(datetime.date.today(), co) - datetime.datetime.combine(datetime.date.today(), ci)
                 total_hours += diff.total_seconds() / 3600
@@ -104,6 +109,12 @@ def my_dashboard():
         logger.error("Self-service dashboard error: %s", e)
         flash('An error occurred.', 'danger')
         return redirect(url_for('dashboard.dashboard'))
+    finally:
+        if conn:
+            try:
+                conn.close()
+            except Exception:
+                pass
 
 
 @selfservice_bp.route('/my-payslip/<int:payroll_id>')

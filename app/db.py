@@ -32,10 +32,6 @@ class ManagedCursor:
                 self._conn_wrapper._conn.rollback()
             except Exception:
                 pass
-        try:
-            self._conn_wrapper._conn.close()
-        except Exception:
-            pass
         return False
 
     def __getattr__(self, name):

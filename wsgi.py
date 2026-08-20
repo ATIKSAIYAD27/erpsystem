@@ -217,6 +217,7 @@ def inject_globals():
             notif_count = cached_counts.get('notif', 0)
             mail_count = cached_counts.get('mail', 0)
         else:
+            conn = None
             try:
                 from app.db import get_db_connection
                 conn = get_db_connection()
@@ -225,10 +226,15 @@ def inject_globals():
                     notif_count = cursor.fetchone()['count']
                     cursor.execute("SELECT COUNT(*) as count FROM messages WHERE receiver_id = %s AND is_read = 0", (session['user_id'],))
                     mail_count = cursor.fetchone()['count']
-                conn.close()
                 cache.set(cache_key, {'notif': notif_count, 'mail': mail_count}, ttl=30)
             except Exception:
                 pass
+            finally:
+                if conn:
+                    try:
+                        conn.close()
+                    except Exception:
+                        pass
     return dict(
         notif_count=notif_count,
         mail_count=mail_count,

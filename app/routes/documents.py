@@ -106,7 +106,7 @@ def document_list():
     except Exception as e:
         logger.error("Document list error: %s", e)
         flash('An error occurred.', 'danger')
-        return render_template('documents.html', documents=[], categories=[])
+        return render_template('documents.html', documents=[], categories=[], search_query=search_query, category_filter=category_filter)
 
 
 @documents_bp.route('/documents/upload', methods=['POST'])

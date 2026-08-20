@@ -1,1 +1,1 @@
-web: bash deploy.sh
+web: gunicorn --config gunicorn_config.py wsgi:app

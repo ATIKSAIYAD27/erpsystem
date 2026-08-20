@@ -54,7 +54,7 @@
             <div class="card-icon-wrapper blue-glow">
                 <i class="bi bi-wallet2"></i>
             </div>
-            <h2 class="stat-value">{{ total_payroll|indian_currency }}</h2>
+            <h2 class="stat-value">{{ (total_payroll or 0)|indian_currency }}</h2>
             <div class="stat-label">Total Payroll</div>
         </div>
     </div>

@@ -114,7 +114,7 @@
     {% for doc in documents %}
     <div class="col-xl-3 col-lg-4 col-md-6">
         <div class="doc-card h-100">
-            <div class="doc-icon {% if 'pdf' in doc.original_name %}pdf{% elif 'doc' in doc.original_name %}word{% elif 'xls' in doc.original_name or 'csv' in doc.original_name %}excel{% elif any(x in doc.original_name for x in ['png','jpg','jpeg','gif','webp','svg']) %}image{% else %}default{% endif %}">
+            <div class="doc-icon {% set ext = doc.original_name|lower %}{% if 'pdf' in ext %}pdf{% elif 'doc' in ext %}word{% elif 'xls' in ext or 'csv' in ext %}excel{% elif 'png' in ext or 'jpg' in ext or 'jpeg' in ext or 'gif' in ext or 'webp' in ext or 'svg' in ext %}image{% else %}default{% endif %}">
                 <i class="bi {{ doc.icon }}"></i>
             </div>
             <h6 class="text-white fw-bold mb-1" style="font-size: 15px; line-height: 1.3; word-break: break-word;">{{ doc.original_name }}</h6>

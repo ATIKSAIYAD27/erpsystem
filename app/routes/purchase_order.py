@@ -38,12 +38,15 @@ def po_list():
                 cursor.execute("SELECT supplier_id, name FROM supplier ORDER BY name")
                 suppliers = cursor.fetchall()
 
-        return render_template('purchase_orders.html', purchase_orders=purchase_orders, suppliers=suppliers)
+                cursor.execute("SELECT product_id, name FROM product ORDER BY name")
+                products = cursor.fetchall()
+
+        return render_template('purchase_orders.html', purchase_orders=purchase_orders, suppliers=suppliers, products=products)
 
     except Exception as e:
         logger.error("PO list error: %s", e)
         flash('An unexpected error occurred.', 'danger')
-        return render_template('purchase_orders.html', purchase_orders=[], suppliers=[])
+        return render_template('purchase_orders.html', purchase_orders=[], suppliers=[], products=[])
 
 
 @po_bp.route('/purchase-orders/add', methods=['POST'])

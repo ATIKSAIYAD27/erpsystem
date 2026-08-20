@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 @dashboard_bp.route('/dashboard')
 @login_required
 def dashboard():
+    conn = None
     try:
         cache_key = f"dashboard:{session.get('user_id')}"
         cached_data = cache.get(cache_key)
@@ -54,17 +55,15 @@ def dashboard():
             monthly_sales = cursor.fetchall()
 
             cursor.execute("""
-                (SELECT 'sale' as type, CONCAT('Sale of ', quantity, ' items recorded') as message, sale_date as timestamp FROM sale)
-                UNION
-                (SELECT 'attendance' as type, CONCAT('Employee #', emp_id, ' checked in') as message, CONCAT(date, ' ', check_in) as timestamp FROM attendance)
-                UNION
-                (SELECT 'task' as type, CONCAT('New task: ', title) as message, deadline as timestamp FROM task)
+                (SELECT 'sale' as type, CONCAT('Sale of ', quantity, ' items recorded') as message, CAST(sale_date AS TEXT) as timestamp FROM sale)
+                UNION ALL
+                (SELECT 'attendance' as type, CONCAT('Employee #', emp_id, ' checked in') as message, CAST(CONCAT(date, ' ', COALESCE(check_in, '00:00:00')) AS TEXT) as timestamp FROM attendance)
+                UNION ALL
+                (SELECT 'task' as type, CONCAT('New task: ', title) as message, CAST(COALESCE(deadline, CURRENT_DATE) AS TEXT) as timestamp FROM task)
                 ORDER BY timestamp DESC
                 LIMIT 10
             """)
             recent_activity = cursor.fetchall()
-
-        conn.close()
 
         chart_labels = [row['month'] for row in monthly_sales]
         chart_data = [float(row['revenue']) for row in monthly_sales]
@@ -90,6 +89,12 @@ def dashboard():
     except Exception as e:
         logger.error("Dashboard error: %s", e)
         return render_template('500.html'), 500
+    finally:
+        if conn:
+            try:
+                conn.close()
+            except Exception:
+                pass
 
 
 @dashboard_bp.route('/dashboard/refresh')
@@ -147,6 +152,7 @@ def dashboard_stream():
 @dashboard_bp.route('/notifications')
 @login_required
 def notifications():
+    conn = None
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
@@ -156,12 +162,17 @@ def notifications():
             cursor.execute("UPDATE notifications SET is_read = 1 WHERE user_id = %s", (session['user_id'],))
             conn.commit()
 
-        conn.close()
         return render_template('notifications.html', notifications=notifs)
     except Exception as e:
         logger.error("Notifications error: %s", e)
         flash('An error occurred while loading notifications.', 'danger')
         return redirect(url_for('dashboard.dashboard'))
+    finally:
+        if conn:
+            try:
+                conn.close()
+            except Exception:
+                pass
 
 
 @dashboard_bp.route('/api/search')
@@ -176,6 +187,7 @@ def global_search():
     if cached_results:
         return jsonify(cached_results)
 
+    conn = None
     try:
         conn = get_db_connection()
         results = []
@@ -205,9 +217,14 @@ def global_search():
             """, (f'%{query}%',))
             results.extend(cursor.fetchall())
 
-        conn.close()
         cache.set(cache_key, results, ttl=120)
         return jsonify(results)
     except Exception as e:
         logger.error("Search error: %s", e)
         return jsonify({'error': 'Search temporarily unavailable'}), 500
+    finally:
+        if conn:
+            try:
+                conn.close()
+            except Exception:
+                pass

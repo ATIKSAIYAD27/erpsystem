@@ -33,6 +33,8 @@ services:
         fromDatabase:
           name: nexus-erp-db
           property: database
+      - key: DB_SSLMODE
+        value: "require"
 
 databases:
   - name: nexus-erp-db

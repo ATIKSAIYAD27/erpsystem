@@ -68,7 +68,7 @@
         <div class="row g-4">
             <div class="col-md-6">
                 <label class="form-label">Company Name</label>
-                <input type="text" class="form-control" name="settings_name" value="{{ settings.settings_name if settings else '' }}" placeholder="Enter settings name" required>
+                <input type="text" class="form-control" name="company_name" value="{{ settings.company_name if settings else '' }}" placeholder="Enter company name" required>
             </div>
             <div class="col-md-6">
                 <label class="form-label">Phone</label>
@@ -76,7 +76,7 @@
             </div>
             <div class="col-md-6">
                 <label class="form-label">Email Address</label>
-                <input type="email" class="form-control" name="email" value="{{ settings.email if settings else '' }}" placeholder="contact@settings.com">
+                <input type="email" class="form-control" name="email" value="{{ settings.email if settings else '' }}" placeholder="contact@company.com">
             </div>
             <div class="col-md-6">
                 <label class="form-label">Currency</label>
@@ -95,7 +95,7 @@
             </div>
             <div class="col-12">
                 <label class="form-label">Address</label>
-                <textarea class="form-control" name="address" rows="3" placeholder="Enter full settings address">{{ settings.address if settings else '' }}</textarea>
+                <textarea class="form-control" name="address" rows="3" placeholder="Enter full company address">{{ settings.address if settings else '' }}</textarea>
             </div>
         </div>
         <div class="mt-4 d-flex justify-content-end">

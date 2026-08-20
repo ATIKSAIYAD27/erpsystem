@@ -120,11 +120,15 @@ def register():
                     (name, email, hashed_pw, role_id)
                 )
 
-                from app.utils import notify_admin
-                notify_admin(f"New user registered: {name} ({email})", 'info')
-
             conn.commit()
             conn.close()
+
+            try:
+                from app.utils import notify_admin
+                notify_admin(f"New user registered: {name} ({email})", 'info')
+            except Exception as notify_err:
+                logger.warning("Failed to notify admin: %s", notify_err)
+
             flash('Registration successful! Please login.', 'success')
             return redirect(url_for('auth.login'))
 
