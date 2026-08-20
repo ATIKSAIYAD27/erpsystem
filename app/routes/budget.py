@@ -43,6 +43,10 @@ def budget_list():
 
             total_budget = sum(float(b['allocated_amount']) for b in budgets)
             total_spent = sum(float(b['spent_amount']) for b in budgets)
+            utilization_pct = round(total_spent / total_budget * 100, 1) if total_budget > 0 else 0
+
+            cursor.execute("SELECT DISTINCT department FROM employee WHERE department IS NOT NULL ORDER BY department")
+            departments = [row['department'] for row in cursor.fetchall()]
 
         conn.close()
 
@@ -55,11 +59,13 @@ def budget_list():
                                budgets=budgets,
                                total_budget=total_budget,
                                total_spent=total_spent,
+                               utilization_pct=utilization_pct,
+                               departments=departments,
                                year=int(year))
     except Exception as e:
         logger.error("Budget list error: %s", e)
         flash('An error occurred.', 'danger')
-        return render_template('budgets.html', budgets=[], total_budget=0, total_spent=0, year=datetime.now().year)
+        return render_template('budgets.html', budgets=[], total_budget=0, total_spent=0, utilization_pct=0, departments=[], year=datetime.now().year)
 
 
 @budget_bp.route('/budgets/add', methods=['POST'])
@@ -81,7 +87,7 @@ def add_budget():
                 INSERT INTO budget (department, allocated_amount, fiscal_year, created_by)
                 VALUES (%s, %s, %s, %s)
                 ON CONFLICT (department, fiscal_year) DO UPDATE SET allocated_amount = EXCLUDED.allocated_amount
-            """, (department, allocated, year, session['user_id'], allocated))
+            """, (department, allocated, year, session['user_id']))
         conn.commit()
         conn.close()
         log_audit(session['user_id'], f"Set budget for {department}: Rs.{allocated:,.2f} for {year}")

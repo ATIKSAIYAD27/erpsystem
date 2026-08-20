@@ -78,13 +78,31 @@ def advanced_finance():
         revenue_map = {row['month']: float(row['revenue']) for row in monthly_revenue}
         expense_map = {row['month']: float(row['expenses']) for row in monthly_expenses}
         months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
+        month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
         profit_loss_data = []
-        for m in months:
+        pl_chart_labels = []
+        pl_chart_revenue = []
+        pl_chart_expenses = []
+        for i, m in enumerate(months):
             key = f"{year}-{m}"
             r = revenue_map.get(key, 0)
             e = expense_map.get(key, 0)
-            profit_loss_data.append({'month': key, 'revenue': r, 'expenses': e, 'profit': r - e})
+            profit_loss_data.append({'month': month_names[i], 'revenue': r, 'expenses': e, 'profit': r - e})
+            pl_chart_labels.append(month_names[i])
+            pl_chart_revenue.append(r)
+            pl_chart_expenses.append(e)
+
+        cash_flow = []
+        all_months = sorted(set(list(revenue_map.keys()) + list(expense_map.keys())))
+        for key in all_months:
+            parts = key.split('-')
+            m_idx = int(parts[1]) - 1 if len(parts) > 1 and parts[1].isdigit() else 0
+            cash_flow.append({
+                'month_name': month_names[m_idx] if m_idx < 12 else key,
+                'inflow': revenue_map.get(key, 0),
+                'outflow': expense_map.get(key, 0)
+            })
 
         return render_template('finance_advanced.html',
                                year=year, month=month,
@@ -96,7 +114,11 @@ def advanced_finance():
                                expense_by_category=expense_by_category,
                                trend_data=trend_data,
                                top_products=top_products,
-                               top_customers=top_customers)
+                               top_customers=top_customers,
+                               cash_flow=cash_flow,
+                               pl_chart_labels=pl_chart_labels,
+                               pl_chart_revenue=pl_chart_revenue,
+                               pl_chart_expenses=pl_chart_expenses)
     except Exception as e:
         logger.error("Advanced finance error: %s", e)
         flash('An error occurred.', 'danger')

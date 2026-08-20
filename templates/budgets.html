@@ -94,12 +94,12 @@
             </thead>
             <tbody>
                 {% for b in budgets %}
-                {% set pct = ((b.spent / b.amount) * 100) if b.amount > 0 else 0 %}
+                {% set pct = ((b.spent_amount / b.allocated_amount) * 100) if b.allocated_amount > 0 else 0 %}
                 <tr>
                     <td class="fw-bold text-white">{{ b.department }}</td>
-                    <td class="text-white">{{ b.amount|indian_currency }}</td>
-                    <td class="text-white">{{ b.spent|indian_currency }}</td>
-                    <td class="text-white">{{ (b.amount - b.spent)|indian_currency }}</td>
+                    <td class="text-white">{{ b.allocated_amount|indian_currency }}</td>
+                    <td class="text-white">{{ b.spent_amount|indian_currency }}</td>
+                    <td class="text-white">{{ (b.allocated_amount - b.spent_amount)|indian_currency }}</td>
                     <td style="min-width: 200px;">
                         <div class="d-flex align-items-center gap-2 mb-1">
                             <span class="small fw-bold {% if pct < 70 %}utilization-low{% elif pct <= 90 %}utilization-mid{% else %}utilization-high{% endif %}">{{ pct|round(1) }}%</span>
@@ -147,11 +147,11 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label text-secondary small">Budget Amount</label>
-                        <input type="number" name="amount" class="form-control" placeholder="e.g. 500000" min="0" required>
+                        <input type="number" name="allocated_amount" class="form-control" placeholder="e.g. 500000" min="0" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label text-secondary small">Fiscal Year</label>
-                        <select name="year" class="form-select">
+                        <select name="fiscal_year" class="form-select">
                             <option value="2026" selected>2026</option>
                             <option value="2025">2025</option>
                             <option value="2024">2024</option>

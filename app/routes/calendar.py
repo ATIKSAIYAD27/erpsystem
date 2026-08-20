@@ -134,7 +134,7 @@ def create_event_form():
 
     if not title or not start_date:
         flash('Title and date are required.', 'danger')
-        return redirect(url_for('calendar.calendar_page'))
+        return redirect(url_for('calendar.calendar_view'))
 
     try:
         conn = get_db_connection()
@@ -150,7 +150,7 @@ def create_event_form():
         logger.error("Create event form error: %s", e)
         flash('Failed to add event.', 'danger')
 
-    return redirect(url_for('calendar.calendar_page'))
+    return redirect(url_for('calendar.calendar_view'))
 
 
 @calendar_bp.route('/api/calendar/event/<int:event_id>', methods=['DELETE'])

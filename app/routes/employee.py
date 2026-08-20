@@ -93,13 +93,10 @@ def add_employee():
         with conn.cursor() as cursor:
             sql = """
                 INSERT INTO employee (user_id, department, salary, hire_date, job_title)
-                VALUES (%s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s) RETURNING emp_id
             """
             cursor.execute(sql, (user_id, department, salary, hire_date, job_title))
-            new_emp_id = cursor.fetchone()['emp_id'] if hasattr(cursor, 'fetchone') else None
-            if new_emp_id is None:
-                cursor.execute("SELECT currval(pg_get_serial_sequence('employee', 'emp_id'))")
-                new_emp_id = cursor.fetchone()[0]
+            new_emp_id = cursor.fetchone()['emp_id']
 
             import datetime
             leave_types = ['Sick', 'Casual', 'Vacation']

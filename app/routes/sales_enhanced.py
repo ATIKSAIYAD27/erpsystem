@@ -166,7 +166,7 @@ def set_target():
                 INSERT INTO sales_target (month, year, target_amount, set_by)
                 VALUES (%s, %s, %s, %s)
                 ON CONFLICT (month, year) DO UPDATE SET target_amount = EXCLUDED.target_amount
-            """, (month, year, target_amount, session['user_id'], target_amount))
+            """, (month, year, target_amount, session['user_id']))
         conn.commit()
         conn.close()
         return jsonify({'success': True})

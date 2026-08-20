@@ -75,16 +75,16 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for row in pl_data %}
+                        {% for row in profit_loss_data %}
                         {% set profit = row.revenue - row.expenses %}
                         <tr>
-                            <td class="text-white">{{ row.month_name }}</td>
+                            <td class="text-white">{{ row.month }}</td>
                             <td class="text-end text-success">{{ row.revenue|indian_number }}</td>
                             <td class="text-end text-danger">{{ row.expenses|indian_number }}</td>
                             <td class="text-end fw-bold {% if profit >= 0 %}text-success{% else %}text-danger{% endif %}">{{ profit|indian_number }}</td>
                         </tr>
                         {% endfor %}
-                        {% if not pl_data %}
+                        {% if not profit_loss_data %}
                         <tr><td colspan="4" class="text-center py-4 text-secondary small">No data.</td></tr>
                         {% endif %}
                     </tbody>
@@ -99,8 +99,8 @@
     <div class="col-lg-5 animate-up delay-3">
         <div class="glass-card h-100">
             <h5 class="fw-bold mb-4">Expenses by Category</h5>
-            {% set max_expense = expenses_by_category|map(attribute='total')|max if expenses_by_category else 1 %}
-            {% for cat in expenses_by_category %}
+            {% set max_expense = expense_by_category|map(attribute='total')|max if expense_by_category else 1 %}
+            {% for cat in expense_by_category %}
             <div class="mb-3">
                 <div class="d-flex justify-content-between mb-1">
                     <span class="text-white small fw-bold">{{ cat.category }}</span>
@@ -111,7 +111,7 @@
                 </div>
             </div>
             {% endfor %}
-            {% if not expenses_by_category %}
+            {% if not expense_by_category %}
             <div class="text-center text-secondary py-3 small">No expense data.</div>
             {% endif %}
         </div>
@@ -124,8 +124,8 @@
             {% for p in top_products %}
             <div class="d-flex justify-content-between align-items-center mb-3 p-2 rounded-3" style="background: rgba(255,255,255,0.02);">
                 <div>
-                    <div class="text-white fw-bold small">{{ p.name }}</div>
-                    <div class="text-secondary" style="font-size: 11px;">{{ p.quantity_sold }} units</div>
+                    <div class="text-white fw-bold small">{{ p.product_name }}</div>
+                    <div class="text-secondary" style="font-size: 11px;">{{ p.qty }} units</div>
                 </div>
                 <div class="text-success fw-bold" style="font-size: 13px;">{{ p.revenue|indian_number }}</div>
             </div>
@@ -143,8 +143,7 @@
             {% for c in top_customers %}
             <div class="d-flex justify-content-between align-items-center mb-3 p-2 rounded-3" style="background: rgba(255,255,255,0.02);">
                 <div>
-                    <div class="text-white fw-bold small">{{ c.name }}</div>
-                    <div class="text-secondary" style="font-size: 11px;">{{ c.order_count }} orders</div>
+                    <div class="text-white fw-bold small">{{ c.customer_name }}</div>
                 </div>
                 <div class="text-success fw-bold" style="font-size: 13px;">{{ c.revenue|indian_currency }}</div>
             </div>

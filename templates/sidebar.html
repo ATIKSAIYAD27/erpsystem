@@ -26,11 +26,13 @@
         </div>
 
         <div class="nav-section">Workforce</div>
+        {% if session.get('role_name') in ('Admin', 'Manager') %}
         <div class="nav-item">
             <a href="/employee" class="nav-link {% if request.path.startswith('/employee') %}active{% endif %}">
                 <i class="bi bi-people-fill"></i> Employees
             </a>
         </div>
+        {% endif %}
         <div class="nav-item">
             <a href="/attendance" class="nav-link {% if request.path.startswith('/attendance') %}active{% endif %}">
                 <i class="bi bi-clock-history"></i> Attendance
@@ -41,13 +43,16 @@
                 <i class="bi bi-calendar2-week"></i> Leave Portal
             </a>
         </div>
+        {% if session.get('role_name') in ('Admin', 'Manager') %}
         <div class="nav-item">
             <a href="/payroll" class="nav-link {% if request.path.startswith('/payroll') %}active{% endif %}">
                 <i class="bi bi-cash-stack"></i> Payroll
             </a>
         </div>
+        {% endif %}
 
         <div class="nav-section">Commerce</div>
+        {% if session.get('role_name') in ('Admin', 'Manager') %}
         <div class="nav-item">
             <a href="/sales" class="nav-link {% if request.path.startswith('/sales') and '/pipeline' not in request.path %}active{% endif %}">
                 <i class="bi bi-graph-up-arrow"></i> Sales
@@ -58,6 +63,7 @@
                 <i class="bi bi-kanban"></i> Sales Pipeline
             </a>
         </div>
+        {% endif %}
         <div class="nav-item">
             <a href="/quotations" class="nav-link {% if request.path.startswith('/quotations') %}active{% endif %}">
                 <i class="bi bi-file-earmark-text"></i> Quotations
@@ -77,6 +83,7 @@
             </a>
         </div>
 
+        {% if session.get('role_name') in ('Admin', 'Manager') %}
         <div class="nav-section">Inventory</div>
         <div class="nav-item">
             <a href="/inventory" class="nav-link {% if request.path.startswith('/inventory') %}active{% endif %}">
@@ -98,8 +105,10 @@
                 <i class="bi bi-cart-check"></i> Purchase Orders
             </a>
         </div>
+        {% endif %}
 
         <div class="nav-section">Finance</div>
+        {% if session.get('role_name') in ('Admin', 'Manager') %}
         <div class="nav-item">
             <a href="/finance" class="nav-link {% if request.path == '/finance' %}active{% endif %}">
                 <i class="bi bi-wallet2"></i> Finance Hub
@@ -110,23 +119,28 @@
                 <i class="bi bi-bar-chart-line-fill"></i> P&L Analytics
             </a>
         </div>
+        {% endif %}
         <div class="nav-item">
             <a href="/expense-reports" class="nav-link {% if request.path.startswith('/expense-reports') %}active{% endif %}">
                 <i class="bi bi-file-earmark-bar-graph"></i> Expense Reports
             </a>
         </div>
+        {% if session.get('role_name') in ('Admin', 'Manager') %}
         <div class="nav-item">
             <a href="/budgets" class="nav-link {% if request.path.startswith('/budgets') %}active{% endif %}">
                 <i class="bi bi-piggy-bank"></i> Budgets
             </a>
         </div>
+        {% endif %}
 
+        {% if session.get('role_name') in ('Admin', 'Manager') %}
         <div class="nav-section">Projects</div>
         <div class="nav-item">
             <a href="/projects" class="nav-link {% if request.path.startswith('/projects') or request.path.startswith('/tasks') %}active{% endif %}">
                 <i class="bi bi-kanban"></i> Projects & Tasks
             </a>
         </div>
+        {% endif %}
 
         <div class="nav-section">Intelligence</div>
         <div class="nav-item">
@@ -146,11 +160,14 @@
                 <i class="bi bi-folder2-open"></i> Documents
             </a>
         </div>
+        {% if session.get('role_name') in ('Admin', 'Manager') %}
         <div class="nav-item">
             <a href="/import-export" class="nav-link {% if request.path.startswith('/import-export') %}active{% endif %}">
                 <i class="bi bi-arrow-left-right"></i> Import / Export
             </a>
         </div>
+        {% endif %}
+        {% if session.get('role_name') in ('Admin', 'Manager') %}
         <div class="nav-item">
             <a href="/risks" class="nav-link {% if request.path.startswith('/risks') %}active{% endif %}">
                 <i class="bi bi-shield-exclamation"></i> Risk Register
@@ -161,6 +178,7 @@
                 <i class="bi bi-diagram-3"></i> Workflows
             </a>
         </div>
+        {% endif %}
         {% if session.get('role_name') == 'Admin' %}
         <div class="nav-item">
             <a href="/company-settings" class="nav-link {% if request.path.startswith('/company-settings') %}active{% endif %}">
