@@ -112,6 +112,8 @@ def delete_supplier(supplier_id):
             cursor.execute("DELETE FROM supplier WHERE supplier_id = %s", (supplier_id,))
         conn.commit()
         conn.close()
+        from app.utils import log_audit
+        log_audit(session['user_id'], f"Deleted supplier {supplier_id}")
         flash('Supplier deleted successfully.', 'success')
     except Exception as e:
         logger.error("Delete supplier error: %s", e)

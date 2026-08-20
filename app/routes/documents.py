@@ -69,7 +69,7 @@ def document_list():
                        (SELECT COUNT(*) FROM document_share ds WHERE ds.doc_id = d.doc_id) as share_count
                 FROM document d
                 LEFT JOIN users u ON d.uploaded_by = u.user_id
-                WHERE (d.uploaded_by = %s OR d.is_public = 1
+                WHERE (d.uploaded_by = %s OR d.is_public = TRUE
                        OR d.doc_id IN (SELECT doc_id FROM document_share WHERE user_id = %s))
             """
             params = [session['user_id'], session['user_id']]
@@ -285,7 +285,7 @@ def api_list():
                        d.is_public, d.uploaded_at, u.name as uploaded_by_name
                 FROM document d
                 LEFT JOIN users u ON d.uploaded_by = u.user_id
-                WHERE d.uploaded_by = %s OR d.is_public = 1
+                WHERE d.uploaded_by = %s OR d.is_public = TRUE
                 ORDER BY d.uploaded_at DESC
             """, (session['user_id'],))
             docs = cursor.fetchall()

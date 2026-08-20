@@ -159,7 +159,7 @@ def notifications():
             cursor.execute("SELECT * FROM notifications WHERE user_id = %s ORDER BY created_at DESC", (session['user_id'],))
             notifs = cursor.fetchall()
 
-            cursor.execute("UPDATE notifications SET is_read = 1 WHERE user_id = %s", (session['user_id'],))
+            cursor.execute("UPDATE notifications SET is_read = TRUE WHERE user_id = %s", (session['user_id'],))
             conn.commit()
 
         return render_template('notifications.html', notifications=notifs)

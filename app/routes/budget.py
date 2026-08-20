@@ -118,6 +118,7 @@ def delete_budget(budget_id):
 
 @budget_bp.route('/api/budgets/summary')
 @login_required
+@manager_or_admin_required
 def api_budget_summary():
     try:
         year = request.args.get('year', datetime.now().year)

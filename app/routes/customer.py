@@ -118,6 +118,8 @@ def delete_customer(customer_id):
             cursor.execute("DELETE FROM customer WHERE customer_id = %s", (customer_id,))
         conn.commit()
         conn.close()
+        from app.utils import log_audit
+        log_audit(session['user_id'], f"Deleted customer {customer_id}")
         flash('Customer deleted successfully.', 'success')
     except Exception as e:
         logger.error("Delete customer error: %s", e)

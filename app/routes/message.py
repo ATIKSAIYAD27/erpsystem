@@ -16,8 +16,8 @@ def inbox():
         conn = get_db_connection()
         with conn.cursor() as cursor:
             cursor.execute("""
-                UPDATE messages SET is_read = 1
-                WHERE receiver_id = %s AND is_read = 0
+                UPDATE messages SET is_read = TRUE
+                WHERE receiver_id = %s AND is_read = FALSE
             """, (user_id,))
             conn.commit()
 
